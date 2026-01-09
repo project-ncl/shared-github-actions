@@ -1,0 +1,67 @@
+name: Build snapshot version and upload to Maven Central
+
+on:
+  workflow_call:
+    # Map the inputs that the caller needs to provide
+    inputs:
+      project_name:
+        # format: <organisation>/<project_name>
+        description: 'The project name to run the job. Prevent forks to run snapshot job'
+        required: true
+        type: string
+      java_version:
+        description: 'The Java version to use to compile. Default: 21'
+        required: false
+        type: string
+        default: '21' # Java 21 is the default
+      snapshot_deploy_command:
+        description: 'The snapshot command to use. Default: mvn'
+        required: false
+        type: string
+        default: 'mvn -B -V org.apache.maven.plugins:maven-source-plugin:jar-no-fork deploy'
+
+jobs:
+  snapshot:
+    # only run for this repository and not on forked ones
+    if: github.repository == '${{ inputs.project_name }}'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+    # Cache m2 repository
+    - name: Cache local Maven repository
+      uses: actions/cache@v5
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Set up JDK '${{ inputs.java_version }}'
+      uses: actions/setup-java@v5
+      with:
+        java-version: '${{ inputs.java_version }}'
+        distribution: 'temurin'
+        cache: maven
+
+    # https://github.com/marketplace/actions/maven-setings-action
+    - name: Maven Settings
+      uses: s4u/maven-settings-action@v4.0.0
+      with:
+        sonatypeSnapshots: true
+        githubServer: false
+        servers: |
+            [{
+                "id": "central-publisher",
+                "username": "${{ secrets.SONATYPE_USERNAME }}",
+                "password": "${{ secrets.SONATYPE_PASSWORD }}"
+            }]
+
+    - name: Extract Project version
+      id: project-version
+      run: echo "version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)" >> "$GITHUB_OUTPUT"
+
+    - name: Deploy Snapshot
+      # Only run for snapshot version and not for commits with released versions
+      if:  ${{ endsWith(steps.project-version.outputs.version, '-SNAPSHOT') }}
+      run: '${{ inputs.snapshot_deploy_command }}'
