@@ -20,6 +20,13 @@ on:
         type: string
         default: 'mvn -B -V org.apache.maven.plugins:maven-source-plugin:jar-no-fork deploy'
 
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+
+
 jobs:
   snapshot:
     # only run for this repository and not on forked ones
