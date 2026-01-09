@@ -46,7 +46,6 @@ jobs:
         cache: maven
 
     - name: Build Command invocation
-      run: mvn -B package --file pom.xml
       run: '${{ inputs.build_command }}'
 
     - name: Check for wrong code formatting
