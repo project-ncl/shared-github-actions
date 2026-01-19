@@ -1,0 +1,79 @@
+name: Job for Central Release
+on:
+  workflow_call: # Manual trigger so you don't release on every push
+    inputs:
+      ref_to_release:
+        description: 'Branch or commit to release. Default: Github default branch'
+        required: false
+        type: string
+        # default has to be a static string, no variables allowed
+        default: ''
+
+      java_version:
+        description: 'The Java version to use to compile. Default: 21'
+        required: false
+        type: string
+        default: '21' # Java 21 is the default
+
+      release_command:
+        description: 'The release command to use. Default: mvn'
+        required: false
+        type: string
+        # localCheckout: don't clone the repo again during release
+        #
+        # pushChanges: don't push git changes to upstream due to requirement
+        #              to use git@github.com :: we don't have ssh setup here
+        #              and instead uses https://github.com + github token.
+        #              We'll manually push it later
+        default: 'mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false'
+
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Allows pushing tags and commits. release plugin uses this
+
+    env:
+      # Logic: Use the user input if provided, otherwise fall back to the repo's default branch
+      FINAL_REF: ${{ github.event.inputs.ref_to_release || github.event.repository.default_branch }}
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: '${{ env.FINAL_REF }}'
+
+    - name: Configure Git User
+      run: |
+        # This sets the name and email for the commits
+        git config --global user.name "github-actions[bot]"
+        # official github action email
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    - name: Set up JDK '${{ inputs.java_version }}'
+      uses: actions/setup-java@v5
+      with:
+        java-version: '${{ inputs.java_version }}'
+        distribution: 'temurin'
+        cache: maven
+        server-id: central-publisher    # Matches the ID in your pom's distributionManagement
+        server-username: MAVEN_USERNAME # Env variable name
+        server-password: MAVEN_PASSWORD # env var secret
+        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+    - name: Publish to Central
+      run: ${{ inputs.release_command }}
+      env:
+        MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+    - name: Push all the git commits and tags back to the repository
+      run: git push && git push --tags
