@@ -21,7 +21,7 @@ on:
         description: 'The build command to use. Default: mvn'
         required: false
         type: string
-        default: 'mvn -B package --file pom.xml'
+        default: 'mvn -B -V clean install'
 
 jobs:
   build:
@@ -29,14 +29,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-    # Cache m2 repository
-    - name: Cache local Maven repository
-      uses: actions/cache@v5
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
 
     - name: Set up JDK '${{ inputs.java_version }}'
       uses: actions/setup-java@v5

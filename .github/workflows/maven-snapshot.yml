@@ -26,7 +26,6 @@ on:
       SONATYPE_PASSWORD:
         required: true
 
-
 jobs:
   snapshot:
     # only run for this repository and not on forked ones
@@ -35,34 +34,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
-    # Cache m2 repository
-    - name: Cache local Maven repository
-      uses: actions/cache@v5
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
 
     - name: Set up JDK '${{ inputs.java_version }}'
       uses: actions/setup-java@v5
       with:
-        java-version: '${{ inputs.java_version }}'
+        java-version: '${{ inputs.java_version }}'  # java version to use
         distribution: 'temurin'
-        cache: maven
-
-    # https://github.com/marketplace/actions/maven-setings-action
-    - name: Maven Settings
-      uses: s4u/maven-settings-action@v4.0.0
-      with:
-        sonatypeSnapshots: true
-        githubServer: false
-        servers: |
-            [{
-                "id": "central-publisher",
-                "username": "${{ secrets.SONATYPE_USERNAME }}",
-                "password": "${{ secrets.SONATYPE_PASSWORD }}"
-            }]
+        cache: maven                      # use cache for speed
+        server-id: central-publisher      # we use this in our pom.xml
+        server-username: MAVEN_USERNAME   # env var name for username
+        server-password:  MAVEN_PASSWORD  # env var name for password
 
     - name: Extract Project version
       id: project-version
@@ -72,3 +53,6 @@ jobs:
       # Only run for snapshot version and not for commits with released versions
       if:  ${{ endsWith(steps.project-version.outputs.version, '-SNAPSHOT') }}
       run: '${{ inputs.snapshot_deploy_command }}'
+      env:
+        MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
