@@ -1,57 +1,60 @@
 name: Build the JIB image and upload to the container registry
 
-on:
-  workflow_call:
-    # Map the inputs that the caller needs to provide
-    inputs:
-      project_name:
-        # format: <organisation>/<project_name>
-        description: 'The project name to run the job. Prevent forks to run this job'
-        required: true
-        type: string
-      java_version:
-        description: 'The Java version to use to compile. Default: 21'
-        required: false
-        type: string
-        default: '21' # Java 21 is the default
-      build_image_command:
-        description: 'The snapshot command to use. Default: mvn'
-        required: false
-        type: string
-        default: 'mvn install -DskipTests=true -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -Dquarkus.container-image.username="${{ secrets.CONTAINER_REGISTRY_USERNAME }}" -Dquarkus.container-image.password="${{ secrets.CONTAINER_REGISTRY_PASSWORD }}'
+###############################################################################
+# WIP
+###############################################################################
+# on:
+  # workflow_call:
+    # # Map the inputs that the caller needs to provide
+    # inputs:
+      # project_name:
+        # # format: <organisation>/<project_name>
+        # description: 'The project name to run the job. Prevent forks to run this job'
+        # required: true
+        # type: string
+      # java_version:
+        # description: 'The Java version to use to compile. Default: 21'
+        # required: false
+        # type: string
+        # default: '21' # Java 21 is the default
+      # build_image_command:
+        # description: 'The snapshot command to use. Default: mvn'
+        # required: false
+        # type: string
+        # default: 'mvn install -DskipTests=true -Dquarkus.container-image.build=true -Dquarkus.container-image.push=true -Dquarkus.container-image.username="${{ secrets.CONTAINER_REGISTRY_USERNAME }}" -Dquarkus.container-image.password="${{ secrets.CONTAINER_REGISTRY_PASSWORD }}'
 
-    secrets:
-      CONTAINER_REGISTRY_USERNAME:
-        required: true
-      CONTAINER_REGISTRY_PASSWORD:
-        required: true
+    # secrets:
+      # CONTAINER_REGISTRY_USERNAME:
+        # required: true
+      # CONTAINER_REGISTRY_PASSWORD:
+        # required: true
 
-jobs:
-  snapshot:
-    # only run for this repository and not on forked ones
-    if: github.repository == '${{ inputs.project_name }}'
-    runs-on: ubuntu-latest
+# jobs:
+  # snapshot:
+    # # only run for this repository and not on forked ones
+    # if: github.repository == '${{ inputs.project_name }}'
+    # runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v6
-    # Cache m2 repository
-    - name: Cache local Maven repository
-      uses: actions/cache@v5
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
+    # steps:
+    # - uses: actions/checkout@v6
+    # # Cache m2 repository
+    # - name: Cache local Maven repository
+      # uses: actions/cache@v5
+      # with:
+        # path: ~/.m2/repository
+        # key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        # restore-keys: |
+          # ${{ runner.os }}-maven-
 
-    - name: Set up JDK '${{ inputs.java_version }}'
-      uses: actions/setup-java@v5
-      with:
-        java-version: '${{ inputs.java_version }}'
-        distribution: 'temurin'
-        cache: maven
+    # - name: Set up JDK '${{ inputs.java_version }}'
+      # uses: actions/setup-java@v5
+      # with:
+        # java-version: '${{ inputs.java_version }}'
+        # distribution: 'temurin'
+        # cache: maven
 
-    - name: Build the container image using jib
-    # need to define: QUARKUS_CONTAINER_IMAGE_USERNAME and QUARKUS_CONTAINER_IMAGE_PASSWORD
-      id: build-image
-      run: '${{ inputs.build_image_command }}'
+    # - name: Build the container image using jib
+    # # need to define: QUARKUS_CONTAINER_IMAGE_USERNAME and QUARKUS_CONTAINER_IMAGE_PASSWORD
+      # id: build-image
+      # run: '${{ inputs.build_image_command }}'
 
