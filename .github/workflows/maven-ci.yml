@@ -26,7 +26,7 @@ on:
         description: 'Whether to fetch all commits. Default: false'
         required: false
         type: boolean
-        default: 'false'
+        default: false
 
 # cancel in-progress runs of the same workflow
 # to avoid unecessary runs when multiple commits pushed

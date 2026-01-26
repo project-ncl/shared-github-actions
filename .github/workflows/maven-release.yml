@@ -31,7 +31,7 @@ on:
         description: 'Whether to fetch all commits. Default: false'
         required: false
         type: boolean
-        default: 'false'
+        default: false
 
     secrets:
       SONATYPE_USERNAME:
