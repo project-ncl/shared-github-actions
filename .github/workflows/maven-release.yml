@@ -27,6 +27,12 @@ on:
         #              We'll manually push it later
         default: 'mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false'
 
+      fetch_all_commits:
+        description: 'Whether to fetch all commits. Default: false'
+        required: false
+        type: boolean
+        default: 'false'
+
     secrets:
       SONATYPE_USERNAME:
         required: true
@@ -55,6 +61,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         ref: '${{ env.FINAL_REF }}'
+        fetch-depth: ${{ inputs.fetch_all_commits == true && 0 || 1 }}
 
     - name: Configure Git User
       run: |

@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: 'mvn -B -V clean install'
+      fetch_all_commits:
+        description: 'Whether to fetch all commits. Default: false'
+        required: false
+        type: boolean
+        default: 'false'
 
 # cancel in-progress runs of the same workflow
 # to avoid unecessary runs when multiple commits pushed
@@ -36,6 +41,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: ${{ inputs.fetch_all_commits == true && 0 || 1 }}
 
     - name: Set up JDK '${{ inputs.java_version }}'
       uses: actions/setup-java@v5

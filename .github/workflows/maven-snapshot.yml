@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         default: 'mvn -B -V org.apache.maven.plugins:maven-source-plugin:jar-no-fork deploy'
+      fetch_all_commits:
+        description: 'Whether to fetch all commits. Default: false'
+        required: false
+        type: boolean
+        default: 'false'
 
     secrets:
       SONATYPE_USERNAME:
@@ -41,6 +46,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: ${{ inputs.fetch_all_commits == true && 0 || 1 }}
 
     - name: Set up JDK '${{ inputs.java_version }}'
       uses: actions/setup-java@v5
