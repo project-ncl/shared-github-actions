@@ -23,6 +23,13 @@ on:
         type: string
         default: 'mvn -B -V clean install'
 
+# cancel in-progress runs of the same workflow
+# to avoid unecessary runs when multiple commits pushed
+# in a short period of time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest

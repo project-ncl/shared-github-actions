@@ -33,6 +33,13 @@ on:
       SONATYPE_PASSWORD:
         required: true
 
+# cancel in-progress runs of the same workflow
+# to avoid unecessary runs when multiple commits pushed
+# in a short period of time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
     runs-on: ubuntu-latest
