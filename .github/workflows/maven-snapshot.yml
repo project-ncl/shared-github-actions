@@ -41,7 +41,7 @@ concurrency:
 jobs:
   snapshot:
     # only run for this repository and not on forked ones
-    if: github.repository == '${{ inputs.project_name }}'
+    if: github.repository == inputs.project_name
     runs-on: ubuntu-latest
 
     steps:
@@ -65,7 +65,7 @@ jobs:
 
     - name: Deploy Snapshot
       # Only run for snapshot version and not for commits with released versions
-      if:  ${{ endsWith(steps.project-version.outputs.version, '-SNAPSHOT') }}
+      if: endsWith(steps.project-version.outputs.version, '-SNAPSHOT')
       run: '${{ inputs.snapshot_deploy_command }}'
       env:
         MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
