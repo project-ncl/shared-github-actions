@@ -1,0 +1,77 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Set version in Maven's pom.xml
+
+on:
+  workflow_call:
+    # Map the inputs that the caller needs to provide
+    inputs:
+      java_version:
+        description: 'The Java version to use to compile. Default: 21'
+        required: false
+        type: string
+        default: '21' # Java 21 is the default
+      new_version:
+        description: 'The new version in pom.xml'
+        required: true
+        type: string
+      ref_for_version:
+        description: 'Branch to set version. Default: Github default branch'
+        required: false
+        type: string
+        # default has to be a static string, no variables allowed
+        default: ''
+
+# cancel in-progress runs of the same workflow
+# to avoid unecessary runs when multiple commits pushed
+# in a short period of time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Allows pushing tags and commits. release plugin uses this
+
+    env:
+      # Logic: Use the user input if provided, otherwise fall back to the repo's default branch
+      FINAL_REF: ${{ github.event.inputs.ref_for_version || github.event.repository.default_branch }}
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: '${{ env.FINAL_REF }}'
+
+    - name: Configure Git User
+      run: |
+        # This sets the name and email for the commits
+        git config --global user.name "github-actions[bot]"
+        # official github action email
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+
+    - name: Set up JDK '${{ inputs.java_version }}'
+      uses: actions/setup-java@v5
+      with:
+        java-version: '${{ inputs.java_version }}'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Update Version in pom.xml
+      run: |
+        mvn versions:set -DnewVersion=${{ inputs.new_version }} -DgenerateBackupPoms=false
+
+    - name: Push all the git commits and tags back to the repository
+      run: |
+        git add -A
+        git commit -m "chore: Bump version to: ${{ inputs.new_version }}"
+        git push
