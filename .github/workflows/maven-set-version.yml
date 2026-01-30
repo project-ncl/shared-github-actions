@@ -36,11 +36,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  set-version:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Allows pushing tags and commits. release plugin uses this
+      contents: write # Allows pushing tags and commits
 
     env:
       # Logic: Use the user input if provided, otherwise fall back to the repo's default branch
@@ -68,7 +68,7 @@ jobs:
 
     - name: Update Version in pom.xml
       run: |
-        mvn versions:set -DnewVersion=${{ inputs.new_version }} -DgenerateBackupPoms=false
+        mvn -B versions:set -DnewVersion=${{ inputs.new_version }} -DgenerateBackupPoms=false
 
     - name: Push all the git commits and tags back to the repository
       run: |
