@@ -1,5 +1,4 @@
-name: Build the JIB image and upload to the container registry
-
+# name: Build the JIB image and upload to the container registry
 ###############################################################################
 # WIP
 ###############################################################################
