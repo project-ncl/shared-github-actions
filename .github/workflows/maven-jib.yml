@@ -1,4 +1,14 @@
-# name: Build the JIB image and upload to the container registry
+name: Build the JIB image and upload to the container registry
+
+on:
+  workflow_dispatch:
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v6
+
 ###############################################################################
 # WIP
 ###############################################################################
