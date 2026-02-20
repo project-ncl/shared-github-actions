@@ -25,7 +25,7 @@ on:
         type: boolean
         default: false
       quarkus_jib_image:
-        description: 'Whether to perform a Quarkus JIB image build. Default: false'
+        description: 'Whether to perform a Quarkus JIB image build and push. Default: false'
         required: false
         type: boolean
         default: false
@@ -35,6 +35,12 @@ on:
         required: true
       SONATYPE_PASSWORD:
         required: true
+      QUAY_DEVEL_USERNAME:
+        # Quay.io username for image push
+        required: false
+      QUAY_DEVEL_PASSWORD:
+        # Quay.io password for image push
+        required: false
 
 # cancel in-progress runs of the same workflow
 # to avoid unnecessary runs when multiple commits pushed
@@ -71,7 +77,11 @@ jobs:
     - name: Deploy Snapshot
       # Only run for snapshot version and not for commits with released versions
       if: endsWith(steps.project-version.outputs.version, '-SNAPSHOT')
-      run: ${{ inputs.snapshot_deploy_command }} ${{ inputs.quarkus_jib_image && '-Dquarkus.container-image.build=true' || '' }}
+      run: >
+        ${{ inputs.snapshot_deploy_command }}
+        ${{ inputs.quarkus_jib_image && '-Dquarkus.container-image.build=true -Dquarkus.container-image.push=true' || '' }}
       env:
         MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        QUARKUS_CONTAINER_IMAGE_USERNAME: ${{ secrets.QUAY_DEVEL_USERNAME }}
+        QUARKUS_CONTAINER_IMAGE_PASSWORD: ${{ secrets.QUAY_DEVEL_PASSWORD }}
