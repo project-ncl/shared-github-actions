@@ -20,7 +20,9 @@ the Java version etc.
 Workflow for performing a release to Maven Central (Sonatype).
 
 - **Tasks**: Configures Git, sets up Java and GPG, performs `release:prepare`
-  and `release:perform`, and pushes changes/tags back to the repository.
+  and `release:perform`, and pushes changes/tags back to the repository. The
+  next version is set by bumping the patch version by 1 and putting the
+  `-SNAPSHOT` suffix.
 
 
 ## Maven Snapshot (`maven-snapshot.yml`)
