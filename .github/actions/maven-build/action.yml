@@ -1,0 +1,38 @@
+name: "Java Maven build"
+description: "Set up Java and Maven, and build the project"
+
+inputs:
+  java_version:
+    description: "The Java version to use to compile. Default: 21"
+    required: false
+    default: "21"
+  build_command:
+    description: "The build command to use. Default: mvn"
+    required: false
+    default: "mvn -B -V clean install"
+  maven_version:
+    description: "The Maven version to use. Defaults to version of the runner image"
+    required: false
+    # Can't have dynamic default of the current version of Maven in the runner so hard-code it.
+    default: "3.9.14"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up JDK '${{ inputs.java_version }}'
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        java-version: "${{ inputs.java_version }}"
+        distribution: "temurin"
+        cache: maven
+
+    - name: Set up Maven '${{ inputs.maven_version }}'
+      uses: stCarolas/setup-maven@12eb41b233df95d49b0c11fc1b5bc8312e5d4ce0 # v5.1
+      with:
+        maven-version: "${{ inputs.maven_version }}"
+
+    - name: Build with Maven
+      shell: bash
+      env:
+        INPUTS_BUILD_COMMAND: ${{ inputs.build_command }}
+      run: bash -c "${INPUTS_BUILD_COMMAND}"
