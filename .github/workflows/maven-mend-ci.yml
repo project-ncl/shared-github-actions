@@ -189,7 +189,7 @@ jobs:
                 "\(.level // "warning"): \(.message.text // "(no message)") (\((.locations[0].physicalLocation.artifactLocation.uri) // "no location"):\((.locations[0].physicalLocation.region.startLine) // "?"))"
               ' "$SAST_LOG" 2>/dev/null | head -50)
               if [ -z "$SAST_OUTPUT" ]; then
-                echo "(no findings)"
+                echo "*no findings*"
               else
                 echo "$SAST_OUTPUT"
               fi
