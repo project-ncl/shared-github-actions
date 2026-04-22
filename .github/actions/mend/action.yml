@@ -5,6 +5,10 @@ inputs:
   PROJECT_NAME:
     description: "The project name in Mend"
     required: true
+  TAGS:
+    description: "Comma-separated key:value tags for this scan (e.g. 'a:123, b:456')"
+    required: false
+    default: ""
   SCA:
     description: "Run SCA scan"
     required: true
@@ -16,11 +20,11 @@ inputs:
     description: "Run SAST scan"
     required: true
   source_ref:
-    description: "Git ref to associate findings with (e.g. 'refs/pull/123/head'). Defaults to the workflow's ref."
+    description: "Git ref to associate findings with (e.g. 'refs/pull/123/head'). Defaults to the workflow's ref"
     required: false
     default: ""
   source_sha:
-    description: "Commit SHA to associate findings with. Defaults to the workflow's SHA."
+    description: "Commit SHA to associate findings with. Defaults to the workflow's SHA"
     required: false
     default: ""
 
@@ -43,27 +47,33 @@ runs:
       env:
         SCA_REACHABILITY: ${{ inputs.SCA_REACHABILITY }}
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+        TAGS: ${{ inputs.TAGS }}
       run: |
         REACHABILITY_SCAN=$([[ "$SCA_REACHABILITY" == "true" ]] && echo "-r" || echo "")
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
-        mend dep -u $REACHABILITY_SCAN --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" || SCAN_EXIT=$?
+        TAGS_ARG=()
+        [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        mend dep -u $REACHABILITY_SCAN --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
         SCAN_EXIT=${SCAN_EXIT:-0}
         mkdir -p ~/.mend/logs
         [ -f sca-results.txt ] && cp sca-results.txt ~/.mend/logs
-        exit $SCAN_EXIT
+        exit "$SCAN_EXIT"
 
     - name: Run Mend SAST scan
       if: ${{ !cancelled() && inputs.SAST == 'true' }}
       shell: bash
       env:
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+        TAGS: ${{ inputs.TAGS }}
       run: |
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
-        mend code -r --formats sarif --filename sast-results --non-interactive --scope "$MEND_SCOPE" || SCAN_EXIT=$?
+        TAGS_ARG=()
+        [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        mend code -r --formats sarif --filename sast-results --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
         SCAN_EXIT=${SCAN_EXIT:-0}
         mkdir -p ~/.mend/logs
         [ -f sast-results.sarif ] && cp sast-results.sarif ~/.mend/logs
-        exit $SCAN_EXIT
+        exit "$SCAN_EXIT"
 
     - name: Publish Mend folder
       if: ${{ !cancelled() && (inputs.SCA == 'true' || inputs.SAST == 'true') }}
