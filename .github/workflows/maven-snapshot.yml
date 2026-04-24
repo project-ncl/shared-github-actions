@@ -18,7 +18,7 @@ on:
         description: 'The snapshot command to use. Default: mvn'
         required: false
         type: string
-        default: 'mvn -B -V org.apache.maven.plugins:maven-source-plugin:jar-no-fork deploy'
+        default: 'mvn -B -V deploy'
       fetch_all_commits:
         description: 'Whether to fetch all commits. Default: false'
         required: false
