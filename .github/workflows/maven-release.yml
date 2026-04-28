@@ -27,6 +27,12 @@ on:
         #              We'll manually push it later
         default: 'mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false -DsignTag=false'
 
+      server_id:
+        description: "The Maven server id to configure in settings.xml. Default: central-publisher"
+        required: false
+        type: string
+        default: 'central-publisher'
+
       fetch_all_commits:
         description: 'Whether to fetch all commits. Default: false'
         required: false
@@ -81,7 +87,7 @@ jobs:
         java-version: '${{ inputs.java_version }}'
         distribution: 'temurin'
         cache: maven
-        server-id: central-publisher    # Matches the ID in your pom's distributionManagement
+        server-id: '${{ inputs.server_id }}' # Matches the ID in your pom's distributionManagement
         server-username: MAVEN_USERNAME # Env variable name
         server-password: MAVEN_PASSWORD # env var secret
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
