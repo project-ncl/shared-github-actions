@@ -235,6 +235,10 @@ A GitHub repository example using those workflows can be found
 
 Sets up Java, sets up Maven, and runs build command.
 
+## NPM Build (`npm-build/action.yml`)
+
+Sets up Node.js, sets up NPM, and runs build command.
+
 ## Mend (`mend/action.yml`)
 
 Downloads and installs Mend CLI, runs Mend SCA scan (if enabled), and runs Mend SAST scan (if enabled). Publishes artifacts of results of SCA/SAST scans.
