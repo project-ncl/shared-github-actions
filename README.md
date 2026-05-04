@@ -48,15 +48,17 @@ Standard CI workflow for NPM projects.
 
 - **Tasks**: Checkout code, set up Node.js, set up NPM, run build command, optionally run tests, optionally check for code formatting errors, and optionally push build artifact (which is used by Mend workflow).
 
-## Maven Mend
-Workflow to run Mend analysis, both SCA (Software Composition Analysis) and SAST (Static Application Security Testing), on Maven projects. Because it has to have access to secrets in the organization or repository, it has two modes: `fresh` and `deferred`.
+## Mend CI (`mend-ci.yml`)
+Workflow to run Mend analysis, both SCA (Software Composition Analysiss) and SAST (Static Application Security Testing), on Maven projects. Because it has to have access to secrets in the organization or repository, on Pull Requests, it is meant to run `on: workflow_run`.
 
-Fresh mode checkouts the code, builds the Maven project, and runs the Mend analysis. It is designed for cronjob schedule, and push to main workflow runs - because for those, the secrets are accessible.
+It depends on some build workflow with `upload_artifact` set to `true`, and before analysis, downloads an build artifact.
 
-Workflows run in the context of the PR from a fork do not have access to the secrets. For that use-case, deferred mode exists. It is meant to be executed `on: workflow_run` depending on Maven CI workflow with `upload_artifact` set to `true` - this way, the Maven Mend workflow is run in the context of the base repository. It downloads saved PR metadata and build artifact, sets check-run on the PR, runs the Mend analysis, and posts PR comment.
+If `pr_feedback` is `false`, it downloads the build artifact, and runs the Mend analysis. This is meant for cronjob schedule, and push to main workflow runs.
+
+Workflows run in the context of the PR from a fork do not have access to the secrets. It is meant to be executed `on: workflow_run` - this way, the Mend workflow is run in the context of the base repository. `pr_feedback` should be set to `true` and `triggering_run_id` set to ID of a triggering workflow. It downloads saved PR metadata and build artifact, sets check-run on the PR, runs the Mend analysis, and posts PR comment.
 
 <details>
-<summary>Example of 'fresh' mode usage</summary>
+<summary>Example of push to main and cronjob usage</summary>
 
 ```yaml
 name: Mend CLI scan for Maven
@@ -76,8 +78,19 @@ permissions:
   security-events: write
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@<sha>
+      - uses: project-ncl/shared-github-actions/.github/actions/maven-build@<sha>
+      - uses: actions/upload-artifact@<sha>
+        with:
+          name: pr-build
+          path: .
+
   call-maven-mend-ci:
-    uses: project-ncl/shared-github-actions/.github/workflows/maven-mend-ci.yml@<sha>
+    needs: build
+    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@<sha>
     with:
       SCA: true
       SAST: true
@@ -91,7 +104,7 @@ jobs:
 </details>
 
 <details>
-<summary>Example of 'deferred' mode usage</summary>
+<summary>Example of PR usage</summary>
 
 ```yaml
 name: Java CI with Maven
@@ -131,11 +144,10 @@ concurrency:
 jobs:
   scan:
     if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request'
-    uses: project-ncl/shared-github-actions/.github/workflows/maven-mend-ci.yml@<sha>
+    uses: project-ncl/shared-github-actions/.github/workflows/mend-ci.yml@<sha>
     with:
       SCA: true
       SAST: true
-      mode: deferred
       triggering_run_id: ${{ github.event.workflow_run.id }}
       pr_feedback: true
     secrets:
