@@ -1,18 +1,8 @@
-name: Mend CLI scan for Maven
+name: Mend CLI scan
 
 on:
   workflow_call:
     inputs:
-      java_version:
-        description: "The Java version to use to compile. Default: 21"
-        required: false
-        type: string
-        default: "21"
-      maven_version:
-        description: "The Maven version to use. Defaults to version of the runner image"
-        required: false
-        type: string
-        default: "3.9.14"
       SCA:
         required: true
         type: boolean
@@ -23,18 +13,13 @@ on:
       SAST:
         required: true
         type: boolean
-      mode:
-        description: "'fresh' (checkout + build + scan) or 'deferred' (consume artifact + scan)"
-        required: false
-        type: string
-        default: "fresh"
       triggering_run_id:
-        description: "workflow_run id to pull artifacts from (required for mode='deferred')"
+        description: "workflow_run id to pull artifacts from"
         required: false
         type: string
         default: ""
       pr_feedback:
-        description: "PR check and comment feedback (deferred mode only)"
+        description: "Whether to add PR check and comment feedback"
         required: false
         type: boolean
         default: false
@@ -70,51 +55,32 @@ jobs:
       security-events: write
 
     steps:
-      # Fresh mode: checkout + build
-
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        if: inputs.mode == 'fresh'
-        with:
-          persist-credentials: false
-
-      - uses: project-ncl/shared-github-actions/.github/actions/maven-build@94481b379fd7ddda5fe363d1c1d5fc311930c607 # main
-        if: inputs.mode == 'fresh'
-        with:
-          java_version: ${{ inputs.java_version }}
-          build_command: "mvn -B -V clean install -DskipTests"
-          maven_version: ${{ inputs.maven_version }}
-
-      # Deferred mode: fetch PR metadata and build artifact
-
       - name: Download PR metadata
-        if: inputs.mode == 'deferred'
+        if: inputs.pr_feedback
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pr-metadata
           path: pr-metadata
-          run-id: ${{ inputs.triggering_run_id }}
+          run-id: ${{ inputs.triggering_run_id || github.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Read PR metadata
-        if: inputs.mode == 'deferred'
+        if: inputs.pr_feedback
         id: metadata
         run: |
           echo "pr_number=$(cat pr-metadata/pr-number)" >> "$GITHUB_OUTPUT"
           echo "pr_sha=$(cat pr-metadata/pr-sha)" >> "$GITHUB_OUTPUT"
 
-      - name: Download PR build artifact
-        if: inputs.mode == 'deferred'
+      - name: Download build artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: pr-build
           path: .
-          run-id: ${{ inputs.triggering_run_id }}
+          run-id: ${{ inputs.triggering_run_id || github.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      # Deferred mode: create in-progress check-run
-
       - name: Create in-progress check-run
-        if: inputs.mode == 'deferred' && inputs.pr_feedback
+        if: inputs.pr_feedback
         id: check
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # 9.0.0
         env:
@@ -131,27 +97,23 @@ jobs:
             });
             return check.id;
 
-      # Common: run Mend scan
-
       - name: Run Mend CLI scan
         uses: project-ncl/shared-github-actions/.github/actions/mend@94481b379fd7ddda5fe363d1c1d5fc311930c607 # main
         with:
           PROJECT_NAME: ${{ github.event.repository.name }}
           TAGS: >-
-            ${{ inputs.mode == 'deferred'
+            ${{ inputs.pr_feedback
                 && format('trigger:pr, pr:{0}, run:{1}', steps.metadata.outputs.pr_number, github.run_id)
                 || format('trigger:{0}, run:{1}', github.event_name, github.run_id) }}
           SCA: ${{ inputs.SCA }}
           SCA_REACHABILITY: ${{ inputs.SCA_REACHABILITY }}
           SAST: ${{ inputs.SAST }}
-          source_ref: ${{ inputs.mode == 'deferred' && format('refs/pull/{0}/head', steps.metadata.outputs.pr_number) || '' }}
-          source_sha: ${{ inputs.mode == 'deferred' && steps.metadata.outputs.pr_sha || '' }}
-
-      # Deferred mode: update check-run + PR comment with results
+          source_ref: ${{ steps.metadata.outputs.pr_number && format('refs/pull/{0}/head', steps.metadata.outputs.pr_number) || '' }}
+          source_sha: ${{ steps.metadata.outputs.pr_sha || '' }}
 
       - name: Build result summary
         id: summary
-        if: ${{ !cancelled() && inputs.mode == 'deferred' && inputs.pr_feedback }}
+        if: ${{ !cancelled() && inputs.pr_feedback }}
         run: |
           SCA_LOG="$HOME/.mend/logs/sca-results.txt"
           SAST_LOG="$HOME/.mend/logs/sast-results.sarif"
@@ -229,7 +191,7 @@ jobs:
           echo "overall=success" >> "$GITHUB_OUTPUT"
 
       - name: Update check-run
-        if: ${{ !cancelled() && inputs.mode == 'deferred' && inputs.pr_feedback }}
+        if: ${{ !cancelled() && inputs.pr_feedback }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # 9.0.0
         env:
           CHECK_ID: ${{ steps.check.outputs.result }}
@@ -251,7 +213,7 @@ jobs:
             });
 
       - name: Post or update PR comment
-        if: ${{ !cancelled() && inputs.mode == 'deferred' && inputs.pr_feedback }}
+        if: ${{ !cancelled() && inputs.pr_feedback }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # 9.0.0
         env:
           PR_NUMBER: ${{ steps.metadata.outputs.pr_number }}
