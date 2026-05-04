@@ -49,7 +49,7 @@ jobs:
           fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
           persist-credentials: false
 
-      - uses: project-ncl/shared-github-actions/.github/actions/npm-build@8ba48d272f8e53b55e5a266a4c3feeab6e7f0526 # main
+      - uses: project-ncl/shared-github-actions/.github/actions/npm-build@429a1085131890ddf95456ac2a7a8b0866dd78ad # main
         with:
           node_version: ${{ inputs.node_version }}
           build_command: ${{ inputs.build_command }}
