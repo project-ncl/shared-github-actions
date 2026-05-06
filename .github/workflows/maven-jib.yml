@@ -2,7 +2,7 @@ name: Build the JIB image and upload to the container registry
 permissions: {}
 
 on:
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
   snapshot:
@@ -69,4 +69,3 @@ jobs:
     # # need to define: QUARKUS_CONTAINER_IMAGE_USERNAME and QUARKUS_CONTAINER_IMAGE_PASSWORD
       # id: build-image
       # run: '${{ inputs.build_image_command }}'
-

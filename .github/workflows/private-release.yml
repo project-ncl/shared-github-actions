@@ -1,5 +1,5 @@
 # This is not meant to be copied and is only for this repository.
-name: "0 Central Release Job" # Adding the 0 so that it's on top of the list of GitHub actions
+name: "0 Release Job" # Adding the 0 so that it's on top of the list of GitHub actions
 on:
   workflow_dispatch: # Manual trigger so you don't release on every push
     inputs:
