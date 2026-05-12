@@ -100,3 +100,12 @@ jobs:
           name: pr-metadata
           path: pr-metadata
           retention-days: 1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: inputs.upload_artifacts
+        with:
+          name: pr-m2
+          path: ~/.m2/repository/org/jboss/pnc/
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 1
