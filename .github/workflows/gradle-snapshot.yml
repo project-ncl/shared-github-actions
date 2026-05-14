@@ -1,0 +1,64 @@
+name: Build snapshot version and upload to Gradle Central
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        # format: <organisation>/<project_name>
+        description: "The project name to run the job. Prevent forks to run snapshot job"
+        required: true
+        type: string
+      java_version:
+        description: "The Java version to use to compile. Default: 17"
+        required: false
+        type: string
+        default: "17"
+      fetch_all_commits:
+        description: "Whether to fetch all commits. Default: false"
+        required: false
+        type: boolean
+        default: false
+
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    if: github.repository == inputs.project_name
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+          persist-credentials: false
+
+      - name: Set up JDK '${{ inputs.java_version }}'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: "${{ inputs.java_version }}"
+          distribution: "temurin"
+          cache: gradle
+          server-id: central-publisher # we use this in our pom.xml
+          server-username: MAVEN_USERNAME # env var name for username
+          server-password: MAVEN_PASSWORD # env var name for password
+
+      - name: Extract Project version
+        id: project-version
+        run: echo "version=$(awk -F "=" 'BEGIN{ORS=""} /version/{print $NF}' gradle.properties)" >> "$GITHUB_OUTPUT"
+
+      - uses: project-ncl/shared-github-actions/.github/actions/gradle-build@8508c5b6bbd47f9528410b0f7de23231b09e86e1 # main
+        if: ${{ endsWith(steps.project-version.outputs.version, '-SNAPSHOT') }}
+        with:
+          java_version: ${{ inputs.java_version }}
+          build_args: "build publishToCentral -x test -x funcTest"
+        env:
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

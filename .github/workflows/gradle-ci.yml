@@ -1,0 +1,108 @@
+name: Java CI with Gradle
+
+on:
+  workflow_call:
+    inputs:
+      java_version:
+        description: "The Java version to use to compile. Default: 17"
+        required: false
+        type: string
+        default: "17"
+      gradle_version:
+        description: "The Gradle version to use, or 'wrapper'. Default: wrapper"
+        required: false
+        type: string
+        default: "wrapper"
+      build_args:
+        description: "Args for gradle build"
+        required: true
+        type: string
+      fetch_all_commits:
+        description: "Whether to fetch all commits. Default: false"
+        required: false
+        type: boolean
+        default: false
+      pre_build_script:
+        description: "Optional script to run after checkout, before the build."
+        required: false
+        type: string
+        default: ""
+      upload_coverage:
+        description: "Whether to upload coverage to Codecov. Default: false"
+        required: false
+        type: boolean
+        default: false
+      coverage_files:
+        description: "Coverage report files to upload when 'upload_coverage' is true."
+        required: false
+        type: string
+        default: ""
+      upload_artifacts:
+        description: "Whether to upload artifacts and their metadata. Default: false"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.java_version }}-${{ inputs.gradle_version }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+          persist-credentials: false
+
+      - name: Run pre-build script
+        if: inputs.pre_build_script != ''
+        shell: bash
+        env:
+          PRE_BUILD_SCRIPT: ${{ inputs.pre_build_script }}
+        run: bash -c "${PRE_BUILD_SCRIPT}"
+
+      - uses: project-ncl/shared-github-actions/.github/actions/gradle-build@8508c5b6bbd47f9528410b0f7de23231b09e86e1 # main
+        with:
+          java_version: ${{ inputs.java_version }}
+          gradle_version: ${{ inputs.gradle_version }}
+          build_args: ${{ inputs.build_args }}
+
+      - name: Codecov
+        if: inputs.upload_coverage
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          files: ${{ inputs.coverage_files }}
+          verbose: true
+
+      - name: Save PR metadata
+        if: inputs.upload_artifacts
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p pr-metadata
+          echo "$PR_NUMBER" > pr-metadata/pr-number
+          echo "$PR_SHA" > pr-metadata/pr-sha
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: inputs.upload_artifacts
+        with:
+          name: pr-build
+          path: |
+            .
+            !.git
+            !pr-metadata
+          retention-days: 1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: inputs.upload_artifacts
+        with:
+          name: pr-metadata
+          path: pr-metadata
+          retention-days: 1

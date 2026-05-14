@@ -43,6 +43,11 @@ the Java version etc. It is possible to use this within a matrix job.
 ```
 </details>
 
+## Gradle CI (`gradle-ci.yml`)
+Standard CI workflow for Gradle projects.
+
+- **Tasks**: Checkout code, set up Java, set up Maven, run build command, optionally run coverage tests, and optionally push build artifact (which is used by Mend workflow). Can also run optional pre-build script.
+
 ## NPM CI (`npm-ci.yml`)
 Standard CI workflow for NPM projects.
 
@@ -188,6 +193,9 @@ Workflow for deploying snapshot versions to Maven Central.
   * quarkus_jib_image ( default: `false`)
   * jboss_parent_override: This is used to override variables from the jboss-parent (default `-Dcentral.serverId=central-publisher -Dcentral.sonatype.url=https://central.sonatype.com/repository/maven-snapshots -Pcentral-release -Dgpg.skip`)
 
+## Gradle Snapshot (`gradle-snapshot.yml`)
+
+Workflow for deploying snapshot versions to Gradle Central, similar to its Maven counterpart.
 
 ## Maven Set Version (`maven-set-version.yml`)
 Workflow to update the version in a Maven `pom.xml`. This can be manually run by going to the GitHub Actions tab and selecting the workflow.
@@ -251,6 +259,10 @@ A GitHub repository example using those workflows can be found
 ## Maven Build (`maven-build/action.yml`)
 
 Sets up Java, sets up Maven, and runs build command.
+
+## Gradle Build (`gradle-build/action.yml`)
+
+Sets up Java, sets up Gradle, and runs build command.
 
 ## NPM Build (`npm-build/action.yml`)
 
