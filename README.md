@@ -46,7 +46,17 @@ the Java version etc. It is possible to use this within a matrix job.
 ## Gradle CI (`gradle-ci.yml`)
 Standard CI workflow for Gradle projects.
 
-- **Tasks**: Checkout code, set up Java, set up Maven, run build command, optionally run coverage tests, and optionally push build artifact (which is used by Mend workflow). Can also run optional pre-build script.
+- **Tasks**: Checkout code, set up Java, set up Gradle, run build command, optionally run coverage tests, and optionally push build artifact (which is used by Mend workflow). Can also run optional pre-build script.
+- **Inputs**: The following inputs are available to be overridden
+  * java_version (default: `17`)
+  * gradle_version (default `wrapper`)
+  * build_command
+  * pre_build_script
+  * fetch_all_commits (default: `false`)
+  * upload_coverage (default: `false`)
+  * coverage_files (report files to upload)
+  * upload_artifacts (default: `false`)
+
 
 ## NPM CI (`npm-ci.yml`)
 Standard CI workflow for NPM projects.
