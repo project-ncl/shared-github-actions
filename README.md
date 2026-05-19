@@ -81,13 +81,23 @@ Standard CI workflow for Gradle projects.
 - **Inputs**: The following inputs are available to be overridden
   * java_version (default: `17`)
   * gradle_version (default `wrapper`)
-  * build_command
+  * build_args
   * pre_build_script
   * fetch_all_commits (default: `false`)
   * upload_coverage (default: `false`)
   * coverage_files (report files to upload)
   * upload_artifacts (default: `false`)
 
+## SBT CI (`sbt-ci.yml`)
+Standard CI workflow for Scala/SBT projects.
+
+- **Tasks**: Checkout code, set up Java, set up SBT, run build command, and optionally push build artifact (which is used by Mend workflow).
+- **Inputs**: The following inputs are available to be overridden
+  * java_version (default: `8`)
+  * build_args
+  * resolvers (contents of SBT resolves file)
+  * fetch_all_commits (default: `false`)
+  * upload_artifacts (default: `false`)
 
 ## NPM CI (`npm-ci.yml`)
 Standard CI workflow for NPM projects.
@@ -222,7 +232,7 @@ Workflow for performing a release to Maven Central (Sonatype). This can be manua
 Note that the `jboss-parent` overrides the release-plugin `tagNameFormat` to use `@{project.version}`. To revert to the default format add the following to the calling projects properties: `<tagNameFormat>@{project.artifactId}-@{project.version}</tagNameFormat>`
 
 ## Maven Snapshot (`maven-snapshot.yml`)
-Workflow for deploying snapshot versions to Maven Central.
+Workflow for deploying snapshot versions to Maven Central. Gated to the upstream repo so forks don't attempt to publish
 
 - **Tasks**: Deploy our SNAPSHOT version of our project to Maven Central
   Optionally builds and pushes a Quarkus Jib image to Quay.io.
@@ -236,7 +246,13 @@ Workflow for deploying snapshot versions to Maven Central.
 
 ## Gradle Snapshot (`gradle-snapshot.yml`)
 
-Workflow for deploying snapshot versions to Gradle Central, similar to its Maven counterpart.
+Workflow for deploying snapshot versions to Gradle Central, similar to its Maven counterpart. Gated to the upstream repo so forks don't attempt to publish.
+
+## SBT Snapshot (`sbt-snapshot.yml`)
+
+Workflow for deploying snapshot versions to Sonatype Nexus, similar to its Maven counterpart. Gated to the upstream repo so forks don't attempt to publish.
+
+The workflow writes `~/.sbt/.credentials` for SBT to authenticate against the snapshot repository.
 
 ## Maven Set Version (`maven-set-version.yml`)
 Workflow to update the version in a Maven `pom.xml`. This can be manually run by going to the GitHub Actions tab and selecting the workflow.
@@ -308,6 +324,10 @@ Sets up Java, sets up Gradle, and runs build command.
 ## NPM Build (`npm-build/action.yml`)
 
 Sets up Node.js, sets up NPM, and runs build command.
+
+## SBT Build (`sbt-build/action.yml`)
+
+Sets up Java, sets up SBT, and runs build command.
 
 ## Mend (`mend/action.yml`)
 

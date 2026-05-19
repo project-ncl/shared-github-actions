@@ -1,0 +1,79 @@
+name: Build snapshot version and upload to registry
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        # format: <organisation>/<project_name>
+        description: "The project name to run the job. Prevent forks to run snapshot job"
+        required: true
+        type: string
+      fetch_all_commits:
+        description: "Whether to fetch all commits. Default: false"
+        required: false
+        type: boolean
+        default: false
+      java_version:
+        description: "The Java version to use to compile. Default: 8"
+        required: false
+        type: string
+        default: "8"
+      resolvers:
+        description: "SBT resolvers to configure"
+        required: false
+        type: string
+        default: |
+          resolvers ++= Seq(
+              "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+              "Artima" at "https://repo.artima.com/releases",
+              "MRRC" at "https://maven.repository.redhat.com/ga/"
+          )
+      build_args:
+        description: "Args for SBT tool. Default: clean; compile; +test"
+        required: false
+        type: string
+        default: "clean; compile; +test"
+
+    secrets:
+      SNAPSHOT_USER:
+        required: true
+      SNAPSHOT_PASSWORD:
+        required: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == inputs.project_name
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+          persist-credentials: false
+
+      - uses: project-ncl/shared-github-actions/.github/actions/sbt-build@4ce7005f9d9b3be90e606e8a69e5fab884bfe247 # main
+        with:
+          java_version: ${{ inputs.java_version }}
+          resolvers: ${{ inputs.resolvers }}
+          build_args: ${{ inputs.build_args }}
+
+      - name: Publish snapshot
+        shell: bash
+        env:
+          SNAPSHOT_USER: ${{ secrets.SNAPSHOT_USER }}
+          SNAPSHOT_PASSWORD: ${{ secrets.SNAPSHOT_PASSWORD }}
+        run: |
+          mkdir -p "$HOME/.sbt"
+          printf '%s\n' \
+          "realm=Sonatype Nexus Repository Manager" \
+          "host=repository.jboss.org" \
+          "user=$SNAPSHOT_USER" \
+          "password=$SNAPSHOT_PASSWORD" > "$HOME/.sbt/.credentials"
+          sbt -v publish < /dev/null

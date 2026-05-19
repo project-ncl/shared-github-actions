@@ -1,0 +1,85 @@
+name: SBT CI
+
+on:
+  workflow_call:
+    inputs:
+      fetch_all_commits:
+        description: "Whether to fetch all commits. Default: false"
+        required: false
+        type: boolean
+        default: false
+      java_version:
+        description: "The Java version to use to compile. Default: 8"
+        required: false
+        type: string
+        default: "8"
+      resolvers:
+        description: "SBT resolvers to configure"
+        required: false
+        type: string
+        default: |
+          resolvers ++= Seq(
+              "Sonatype Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+              "Artima" at "https://repo.artima.com/releases",
+              "MRRC" at "https://maven.repository.redhat.com/ga/"
+          )
+      build_args:
+        description: "Args for SBT tool. Default: clean; compile; +test"
+        required: false
+        type: string
+        default: "clean; compile; +test"
+      upload_artifacts:
+        description: "Whether to upload artifacts and their metadata. Default: false"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.java_version }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+          persist-credentials: false
+
+      - uses: project-ncl/shared-github-actions/.github/actions/sbt-build@4ce7005f9d9b3be90e606e8a69e5fab884bfe247 # main
+        with:
+          java_version: ${{ inputs.java_version }}
+          resolvers: ${{ inputs.resolvers }}
+          build_args: ${{ inputs.build_args }}
+
+      - name: Save PR metadata
+        if: inputs.upload_artifacts
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p pr-metadata
+          echo "$PR_NUMBER" > pr-metadata/pr-number
+          echo "$PR_SHA" > pr-metadata/pr-sha
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: inputs.upload_artifacts
+        with:
+          name: pr-build
+          path: |
+            .
+            !.git
+            !pr-metadata
+          retention-days: 1
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: inputs.upload_artifacts
+        with:
+          name: pr-metadata
+          path: pr-metadata
+          retention-days: 1
