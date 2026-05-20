@@ -72,4 +72,5 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
-          ./gradlew "${INPUTS_SNAPSHOT_DEPLOY_ARGS}"
+          # shellcheck disable=SC2086
+          ./gradlew ${INPUTS_SNAPSHOT_DEPLOY_ARGS}
