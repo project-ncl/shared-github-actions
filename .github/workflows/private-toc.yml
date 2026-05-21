@@ -38,8 +38,10 @@ jobs:
     - name: Commit and push if README changed
       run: |-
         git diff
-        git diff --quiet || (git add README.md && git commit -m "Updated README ToC")
-        git push
+        # Construct the authenticated URL
+        # format: https://<token>@github.com/<owner>/<repo>.git
+        REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+        git diff --quiet || (git add README.md && git commit -m "Updated README ToC" && git push "${REMOTE}")
       env:
         # Use the standard GITHUB_TOKEN or a Custom PAT if pushing to other repos
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
