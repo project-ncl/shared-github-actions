@@ -1,0 +1,45 @@
+# This is not meant to be copied and is only for this repository.
+name: Update README table of contents
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    paths:
+    - README.md
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Allows pushing commits.
+
+    steps:
+    - name: Check out repo
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      with:
+        persist-credentials: false
+
+    - name: Configure Git User
+      run: |
+        # This sets the name and email for the commits
+        git config --global user.name "github-actions[bot]"
+        # official github action email
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    - name: Update TOC
+      run: npx --yes doctoc README.md
+
+    - name: Commit and push if README changed
+      run: |-
+        git diff
+        git diff --quiet || (git add README.md && git commit -m "Updated README ToC")
+        git push
+      env:
+        # Use the standard GITHUB_TOKEN or a Custom PAT if pushing to other repos
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

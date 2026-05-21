@@ -1,3 +1,9 @@
+
+# Table of Contents
+
+<!-- START doctoc -->
+<!-- END doctoc -->
+
 # Introduction
 
 This repository is used to store GitHub Action workflows (and other stuff) that we'll re-use in other PNC repositories
