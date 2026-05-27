@@ -19,6 +19,14 @@ inputs:
   SAST:
     description: "Run SAST scan"
     required: true
+  SCA_EXCLUDES:
+    description: "Comma-separated list of file paths to exclude from SCA scan (e.g. 'dir1/**,dir2/file.txt')"
+    required: false
+    default: ""
+  SAST_EXCLUDES:
+    description: "Comma-separated list of file paths to exclude from SAST scan (e.g. 'dir1/**,dir2/file.txt')"
+    required: false
+    default: ""
   source_ref:
     description: "Git ref to associate findings with (e.g. 'refs/pull/123/head'). Defaults to the workflow's ref"
     required: false
@@ -48,12 +56,16 @@ runs:
         SCA_REACHABILITY: ${{ inputs.SCA_REACHABILITY }}
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         TAGS: ${{ inputs.TAGS }}
+        SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
       run: |
         REACHABILITY_SCAN=$([[ "$SCA_REACHABILITY" == "true" ]] && echo "-r" || echo "")
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
         TAGS_ARG=()
         [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        export MEND_SCA_PATH_EXCLUSIONS="$SCA_EXCLUDES"
+
         mend dep -u $REACHABILITY_SCAN --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
+
         SCAN_EXIT=${SCAN_EXIT:-0}
         mkdir -p ~/.mend/logs
         [ -f sca-results.txt ] && cp sca-results.txt ~/.mend/logs
@@ -65,11 +77,15 @@ runs:
       env:
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         TAGS: ${{ inputs.TAGS }}
+        SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
       run: |
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
         TAGS_ARG=()
         [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        export MEND_SAST_PATH_EXCLUSIONS="$SAST_EXCLUDES"
+
         mend code -r --formats sarif --filename sast-results --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
+
         SCAN_EXIT=${SCAN_EXIT:-0}
         mkdir -p ~/.mend/logs
         [ -f sast-results.sarif ] && cp sast-results.sarif ~/.mend/logs
