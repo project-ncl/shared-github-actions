@@ -53,6 +53,7 @@ the Java version etc. It is possible to use this within a matrix job.
   * fetch_all_commits (default: `false`)
   * maven_version (default: `3.9.15`)
   * upload_artifacts (default: `false`)
+- **Permissions**: `contents: read`
 
 <details>
 <summary>Here is an example of using this in a matrix job</summary>
@@ -90,6 +91,7 @@ Standard CI workflow for Gradle projects.
   * upload_coverage (default: `false`)
   * coverage_files (report files to upload)
   * upload_artifacts (default: `false`)
+- **Permissions**: `contents: read`
 
 ## SBT CI (`sbt-ci.yml`)
 Standard CI workflow for Scala/SBT projects.
@@ -101,11 +103,13 @@ Standard CI workflow for Scala/SBT projects.
   * resolvers (contents of SBT resolves file)
   * fetch_all_commits (default: `false`)
   * upload_artifacts (default: `false`)
+- **Permissions**: `contents: read`
 
 ## NPM CI (`npm-ci.yml`)
 Standard CI workflow for NPM projects.
 
 - **Tasks**: Checkout code, set up Node.js, set up NPM, run build command, optionally run tests, optionally check for code formatting errors, and optionally push build artifact (which is used by Mend workflow).
+- **Permissions**: `contents: read`
 
 ## Mend CI (`mend-ci.yml`)
 Workflow to run Mend analysis, both SCA (Software Composition Analysiss) and SAST (Static Application Security Testing), on Maven projects. Because it has to have access to secrets in the organization or repository, on Pull Requests, it is meant to run `on: workflow_run`.
@@ -231,6 +235,7 @@ Workflow for performing a release to Maven Central (Sonatype). This can be manua
   * release_command (default `mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false`)
   * fetch_all_commits (default: `false`)
   * jboss_parent_override: This is used to override variables from the jboss-parent (default `-Dcentral.serverId=central-publisher -Dcentral.autoPublish=false -DreleaseProfile=central-release -DsignTag=false`)
+- **Permissions**: `contents: write`
 
 Note that the `jboss-parent` overrides the release-plugin `tagNameFormat` to use `@{project.version}`. To revert to the default format add the following to the calling projects properties: `<tagNameFormat>@{project.artifactId}-@{project.version}</tagNameFormat>`
 
@@ -246,6 +251,7 @@ Workflow for deploying snapshot versions to Maven Central. Gated to the upstream
   * fetch_all_commits (default: `false`)
   * quarkus_jib_image ( default: `false`)
   * jboss_parent_override: This is used to override variables from the jboss-parent (default `-Dcentral.serverId=central-publisher -Dcentral.sonatype.url=https://central.sonatype.com/repository/maven-snapshots -Pcentral-release -Dgpg.skip`)
+- **Permissions**: `none`
 
 ## Gradle Snapshot (`gradle-snapshot.yml`)
 
@@ -261,6 +267,7 @@ The workflow writes `~/.sbt/.credentials` for SBT to authenticate against the sn
 Workflow to update the version in a Maven `pom.xml`. This can be manually run by going to the GitHub Actions tab and selecting the workflow.
 
 - **Tasks**: Updates the version using `versions:set` and commits/pushes the change.
+- **Permissions**: `contents: write`
 
 This workflow should be manually called and an example of that may be seen [here](https://github.com/project-ncl/environment-driver/blob/main/.github/workflows/maven-set-version.yml). Its recommended that `on.workflow_dispatch` is used so the user can enter the appropriate values e.g.
 ```
@@ -290,6 +297,8 @@ registry.
 ## Validate GitHub Action (`validate-gh-action.yml`)
 Workflow used to lint and validate GitHub Actions using `actionlint` and
 `zizmor`. This is used in this repository's `validate.yml` to run for PRs.
+
+- **Permissions**: `none`
 
 ## Usage Example
 
