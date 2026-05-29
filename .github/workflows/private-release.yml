@@ -38,7 +38,7 @@ jobs:
           ref: '${{ env.FINAL_REF }}'
           persist-credentials: false
       - id: compute_tag
-        uses: craig-day/compute-tag@f45e4c2d6cab8ef1a0eb512bc165f46e65f45e1d # v19
+        uses: craig-day/compute-tag@4f6e20dc9d852441c4e61a4b3ccadde9511f35f3 # v20
         with:
           version_type: ${{ github.event.inputs.tag_bump }}
           github_token: ${{ github.token }}
