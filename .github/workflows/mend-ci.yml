@@ -13,6 +13,16 @@ on:
       SAST:
         required: true
         type: boolean
+      SCA_EXCLUDES:
+        description: "Comma-separated list of file paths to exclude from SCA scan (e.g. 'dir1/**,dir2/file.txt')"
+        required: false
+        type: string
+        default: ""
+      SAST_EXCLUDES:
+        description: "Comma-separated list of file paths to exclude from SAST scan (e.g. 'dir1/**,dir2/file.txt')"
+        required: false
+        type: string
+        default: ""
       triggering_run_id:
         description: "workflow_run id to pull artifacts from"
         required: false
@@ -107,7 +117,7 @@ jobs:
             return check.id;
 
       - name: Run Mend CLI scan
-        uses: project-ncl/shared-github-actions/.github/actions/mend@153b97777335953545bc8a907eb5f062af66b7f2 # v0.0.18
+        uses: project-ncl/shared-github-actions/.github/actions/mend@b31335d128fec7e29305eeea0b5dc7221829e1a4 # main
         with:
           PROJECT_NAME: ${{ github.event.repository.name }}
           TAGS: >-
@@ -117,6 +127,8 @@ jobs:
           SCA: ${{ inputs.SCA }}
           SCA_REACHABILITY: ${{ inputs.SCA_REACHABILITY }}
           SAST: ${{ inputs.SAST }}
+          SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
+          SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
           source_ref: ${{ steps.metadata.outputs.pr_number && format('refs/pull/{0}/head', steps.metadata.outputs.pr_number) || '' }}
           source_sha: ${{ steps.metadata.outputs.pr_sha || '' }}
 
