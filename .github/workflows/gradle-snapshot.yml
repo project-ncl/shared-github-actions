@@ -55,14 +55,14 @@ jobs:
           server-username: MAVEN_USERNAME # env var name for username
           server-password: MAVEN_PASSWORD # env var name for password
 
-      - name: Set up Gradle'
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
         with:
           gradle-version: "wrapper"
 
       - name: Extract Project version
         id: project-version
-        run: echo "version=$(awk -F "=" 'BEGIN{ORS=""} /version/{print $NF}' gradle.properties)" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(awk -F "=" 'BEGIN{ORS=""} /version|currentVersion/{print $NF}' gradle.properties)" >> "$GITHUB_OUTPUT"
 
       - name: Build with Gradle
         if: ${{ endsWith(steps.project-version.outputs.version, '-SNAPSHOT') }}
