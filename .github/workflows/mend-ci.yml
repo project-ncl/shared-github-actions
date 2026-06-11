@@ -116,6 +116,17 @@ jobs:
             });
             return check.id;
 
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        with:
+          gradle-version: "9.3.0"
+
       - name: Run Mend CLI scan
         uses: project-ncl/shared-github-actions/.github/actions/mend@b31335d128fec7e29305eeea0b5dc7221829e1a4 # main
         with:
