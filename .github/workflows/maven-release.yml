@@ -32,6 +32,11 @@ on:
         required: false
         type: boolean
         default: false
+      quarkus_jib_image:
+        description: 'Whether to perform a Quarkus JIB image build and push. Default: false'
+        required: false
+        type: boolean
+        default: false
 
       jboss_parent_override:
         description: "Overrides for JBoss-Parent Central Profile"
@@ -99,7 +104,7 @@ jobs:
         gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
     - name: Publish to Central
-      run: bash -c "${INPUTS_RELEASE_COMMAND}"
+      run: bash -c "${INPUTS_RELEASE_COMMAND} ${{ inputs.quarkus_jib_image && '-Dquarkus.container-image.build=true -Dquarkus.container-image.group=rh-newcastle -Dquarkus.container-image.push=true' || '' }}"
       env:
         MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
