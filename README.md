@@ -291,9 +291,34 @@ jobs:
 ```
 
 
-## Maven Jib (`maven-jib.yml`)
-*Work in Progress* workflow to build Jib images and upload to a container
-registry.
+## Jib Image Updater (`maven-jib-image-updater.yml`)
+
+This workflow looks inside your root pom.xml for property
+`quarkus.jib.base-jvm-image` with format `<image>:<version@<digest>` and
+creates a PR to update it to the latest image if available
+
+This workflow can then be added to individual repositories and run as a
+cronjob to check for new versions of images
+
+```
+name: Update Jib image
+on:
+  schedule:
+    # Run weekly on Mondays at 9:00 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+...
+jobs:
+    update-jib-image:
+      permissions:
+        contents: write
+        pull-requests: write
+      uses: project-ncl/shared-github-actions/.github/workflows/maven-jib-image-updater.yml@<sha> # v0.0.19
+```
 
 
 ## Validate GitHub Action (`validate-gh-action.yml`)
