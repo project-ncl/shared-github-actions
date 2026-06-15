@@ -114,5 +114,6 @@ runs:
       uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
       with:
         sarif_file: /home/runner/.mend/logs/sast-results.sarif
+        category: mend-sast-${{ inputs.PROJECT_NAME }}
         ref: ${{ inputs.source_ref }}
         sha: ${{ inputs.source_sha }}
