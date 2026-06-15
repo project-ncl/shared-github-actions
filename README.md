@@ -16,7 +16,7 @@
   - [Gradle Snapshot (`gradle-snapshot.yml`)](#gradle-snapshot-gradle-snapshotyml)
   - [SBT Snapshot (`sbt-snapshot.yml`)](#sbt-snapshot-sbt-snapshotyml)
   - [Maven Set Version (`maven-set-version.yml`)](#maven-set-version-maven-set-versionyml)
-  - [Maven Jib (`maven-jib.yml`)](#maven-jib-maven-jibyml)
+  - [Jib Image Updater (`maven-jib-image-updater.yml`)](#jib-image-updater-maven-jib-image-updateryml)
   - [Validate GitHub Action (`validate-gh-action.yml`)](#validate-github-action-validate-gh-actionyml)
   - [Usage Example](#usage-example)
 - [Available Actions](#available-actions)
