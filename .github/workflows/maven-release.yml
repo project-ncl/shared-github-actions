@@ -128,7 +128,7 @@ jobs:
         LATEST_TAG=$(echo "$TAGS" | sed -n '1p')
         PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
         echo "Creating release notes between ${LATEST_TAG} and ${PREVIOUS_TAG}"
-        gh release create --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
+        gh release create --target "${FINAL_REF}" --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
       env:
         # Use the standard GITHUB_TOKEN or a Custom PAT if pushing to other repos
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
