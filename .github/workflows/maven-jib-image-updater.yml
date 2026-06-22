@@ -8,8 +8,6 @@ name: Update Jib Base Image
 
 on:
   workflow_call:
-    inputs:
-    secrets:
 
 # cancel in-progress runs of the same workflow
 # to avoid unnecessary runs when multiple commits pushed
