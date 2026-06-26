@@ -59,7 +59,7 @@ jobs:
           fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
           persist-credentials: false
 
-      - uses: project-ncl/shared-github-actions/.github/actions/maven-build@153b97777335953545bc8a907eb5f062af66b7f2 # v0.0.18
+      - uses: project-ncl/shared-github-actions/.github/actions/maven-build@f7c94a31f30422548ca8b96a7dd6b89b95039784 # v0.0.19
         with:
           java_version: ${{ inputs.java_version }}
           build_command: ${{ inputs.build_command }}
