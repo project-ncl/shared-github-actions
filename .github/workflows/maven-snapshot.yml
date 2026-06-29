@@ -5,8 +5,7 @@ on:
     # Map the inputs that the caller needs to provide
     inputs:
       project_name:
-        # format: <organisation>/<project_name>
-        description: 'The project name to run the job. Prevent forks to run snapshot job'
+        description: 'Name in <organisation>/<project_name> format. Prevents forks to run the job'
         required: true
         type: string
       java_version:
