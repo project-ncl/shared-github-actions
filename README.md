@@ -122,6 +122,8 @@ Workflows run in the context of the PR from a fork do not have access to the sec
 
 To exclude paths from being scanned, specify `SCA_EXCLUDES` and/or `SAST_EXCLUDES` values, in the comma-separated paths format: `'dir1/**,dir2/file.txt'`.
 
+`project_name` **must** be set by the caller (format: <organisation>/<project_name>).
+
 <details>
 <summary>Example of push to main and cronjob usage</summary>
 
@@ -247,7 +249,7 @@ Workflow for deploying snapshot versions to Maven Central. Gated to the upstream
 - **Tasks**: Deploy our SNAPSHOT version of our project to Maven Central
   Optionally builds and pushes a Quarkus Jib image to Quay.io.
 - **Inputs**: The following inputs are available to be overridden
-  * project_name :  **Must** be set by te caller.
+  * project_name :  **Must** be set by the caller (format: <organisation>/<project_name>).
   * java_version (default: `21`)
   * snapshot_deploy_command (default `mvn -B -V deploy`)
   * fetch_all_commits (default: `false`)

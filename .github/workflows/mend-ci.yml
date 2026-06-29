@@ -3,6 +3,10 @@ name: Mend CLI scan
 on:
   workflow_call:
     inputs:
+      project_name:
+        description: "Name in <organisation>/<project_name> format. Prevents forks to run the job"
+        required: true
+        type: string
       SCA:
         required: true
         type: boolean
@@ -47,7 +51,8 @@ on:
         required: true
 
 jobs:
-  build-and-scan:
+  scan:
+    if: github.repository == inputs.project_name
     runs-on: ubuntu-latest
 
     env:
