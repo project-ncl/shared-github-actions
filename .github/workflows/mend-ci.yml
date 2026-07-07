@@ -183,7 +183,12 @@ jobs:
               echo "<details><summary>SCA scan output</summary>"
               echo ""
               echo '```'
-              tail -c 6000 "$SCA_LOG"
+              if [ "$(wc -c < "$SCA_LOG")" -le 40000 ]; then
+                cat "$SCA_LOG"
+              else
+                head -c 40000 "$SCA_LOG" | sed '$d'
+                echo "... *truncated, see full logs below*"
+              fi
               echo '```'
               echo ""
               echo "</details>"
