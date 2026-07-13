@@ -32,6 +32,21 @@ on:
         required: false
         type: string
         default: "clean; compile; +test"
+      snapshot_realm:
+        description: "Realm of the snapshot repository. Default: Sonatype Nexus Repository Manager"
+        required: false
+        type: string
+        default: "Sonatype Nexus Repository Manager"
+      snapshot_host:
+        description: "Host of the snapshot repository. Default: central.sonatype.com"
+        required: false
+        type: string
+        default: "central.sonatype.com"
+      snapshot_deploy_command:
+        description: "The snapshot command to use. Default: sbt -v publish"
+        required: false
+        type: string
+        default: "sbt -v publish"
 
     secrets:
       SNAPSHOT_USER:
@@ -68,11 +83,14 @@ jobs:
         env:
           SNAPSHOT_USER: ${{ secrets.SNAPSHOT_USER }}
           SNAPSHOT_PASSWORD: ${{ secrets.SNAPSHOT_PASSWORD }}
+          SNAPSHOT_REALM: ${{ inputs.snapshot_realm }}
+          SNAPSHOT_HOST: ${{ inputs.snapshot_host }}
+          SNAPSHOT_DEPLOY_COMMAND: ${{ inputs.snapshot_deploy_command }}
         run: |
           mkdir -p "$HOME/.sbt"
           printf '%s\n' \
-          "realm=Sonatype Nexus Repository Manager" \
-          "host=repository.jboss.org" \
+          "realm=$SNAPSHOT_REALM" \
+          "host=$SNAPSHOT_HOST" \
           "user=$SNAPSHOT_USER" \
           "password=$SNAPSHOT_PASSWORD" > "$HOME/.sbt/.credentials"
-          sbt -v publish < /dev/null
+          bash -c "$SNAPSHOT_DEPLOY_COMMAND" < /dev/null
