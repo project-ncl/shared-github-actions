@@ -23,6 +23,10 @@ inputs:
     description: "Comma-separated list of file paths to exclude from SCA scan (e.g. 'dir1/**,dir2/file.txt')"
     required: false
     default: ""
+  SCA_EXCLUDE_CONFIGURATIONS:
+    description: "Comma-separated list of (Gradle) configurations to exclude from SCA scan (e.g. 'test*,compileOnly')"
+    required: false
+    default: "test*,functionalTest*,compileOnly"
   SAST_EXCLUDES:
     description: "Comma-separated list of file paths to exclude from SAST scan (e.g. 'dir1/**,dir2/file.txt')"
     required: false
@@ -57,12 +61,14 @@ runs:
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         TAGS: ${{ inputs.TAGS }}
         SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
+        SCA_EXCLUDE_CONFIGURATIONS: ${{ inputs.SCA_EXCLUDE_CONFIGURATIONS }}
       run: |
         REACHABILITY_SCAN=$([[ "$SCA_REACHABILITY" == "true" ]] && echo "-r" || echo "")
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
         TAGS_ARG=()
         [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
         export MEND_SCA_PATH_EXCLUSIONS="$SCA_EXCLUDES"
+        export MEND_SCA_EXCLUDE_DEP_CLASS="$SCA_EXCLUDE_CONFIGURATIONS"
 
         mend dep -u $REACHABILITY_SCAN --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
         SCAN_EXIT=${SCAN_EXIT:-0}

@@ -120,7 +120,9 @@ If `pr_feedback` is `false`, it downloads the build artifact, and runs the Mend 
 
 Workflows run in the context of the PR from a fork do not have access to the secrets. It is meant to be executed `on: workflow_run` - this way, the Mend workflow is run in the context of the base repository. `pr_feedback` should be set to `true` and `triggering_run_id` set to ID of a triggering workflow. It downloads saved PR metadata and build artifact, sets check-run on the PR, runs the Mend analysis, and posts PR comment.
 
-To exclude paths from being scanned, specify `SCA_EXCLUDES` and/or `SAST_EXCLUDES` values, in the comma-separated paths format: `'dir1/**,dir2/file.txt'`.
+To exclude paths from the SCA/SAST scan, specify `SCA_EXCLUDES` and/or `SAST_EXCLUDES` values, in the comma-separated paths format: `'dir1/**,dir2/file.txt'`.
+
+To exclude configurations from the SCA scan, specify `SCA_EXCLUDE_CONFIGURATIONS`, in the comma-separated format: `'test*,compileOnly'`.
 
 `project_name` **must** be set by the caller (format: <organisation>/<project_name>).
 
