@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: ""
+      SCA_EXCLUDE_CONFIGURATIONS:
+        description: "Comma-separated list of (Gradle) configurations to exclude from SCA scan (e.g. 'test*,compileOnly')"
+        required: false
+        type: string
+        default: "test*,functionalTest*,compileOnly"
       SAST_EXCLUDES:
         description: "Comma-separated list of file paths to exclude from SAST scan (e.g. 'dir1/**,dir2/file.txt')"
         required: false
@@ -122,7 +127,7 @@ jobs:
             return check.id;
 
       - name: Run Mend CLI scan
-        uses: project-ncl/shared-github-actions/.github/actions/mend@0fd979fcdd90cf1b62e6410221d64efd6b470865 # v0.0.21
+        uses: project-ncl/shared-github-actions/.github/actions/mend@7a159ca8e867d1178e9634ab0ddc0dd1dfb10d49 # main
         with:
           PROJECT_NAME: ${{ github.event.repository.name }}
           TAGS: >-
@@ -133,6 +138,7 @@ jobs:
           SCA_REACHABILITY: ${{ inputs.SCA_REACHABILITY }}
           SAST: ${{ inputs.SAST }}
           SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
+          SCA_EXCLUDE_CONFIGURATIONS: ${{ inputs.SCA_EXCLUDE_CONFIGURATIONS }}
           SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
           source_ref: ${{ steps.metadata.outputs.pr_number && format('refs/pull/{0}/head', steps.metadata.outputs.pr_number) || '' }}
           source_sha: ${{ steps.metadata.outputs.pr_sha || '' }}
