@@ -127,7 +127,7 @@ jobs:
             return check.id;
 
       - name: Run Mend CLI scan
-        uses: project-ncl/shared-github-actions/.github/actions/mend@7a159ca8e867d1178e9634ab0ddc0dd1dfb10d49 # main
+        uses: project-ncl/shared-github-actions/.github/actions/mend@a27e6fba6b28bbb96881ec096e9c8ea5a538f481 # v0.0.22
         with:
           PROJECT_NAME: ${{ github.event.repository.name }}
           TAGS: >-
