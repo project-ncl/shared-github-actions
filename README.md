@@ -14,6 +14,7 @@
   - [Maven Release (`maven-release.yml`)](#maven-release-maven-releaseyml)
   - [Maven Snapshot (`maven-snapshot.yml`)](#maven-snapshot-maven-snapshotyml)
   - [Gradle Snapshot (`gradle-snapshot.yml`)](#gradle-snapshot-gradle-snapshotyml)
+  - [Gradle Release (`gradle-release.yml`)](#gradle-release-gradle-releaseyml)
   - [SBT Snapshot (`sbt-snapshot.yml`)](#sbt-snapshot-sbt-snapshotyml)
   - [Maven Set Version (`maven-set-version.yml`)](#maven-set-version-maven-set-versionyml)
   - [Jib Image Updater (`maven-jib-image-updater.yml`)](#jib-image-updater-maven-jib-image-updateryml)
@@ -262,6 +263,99 @@ Workflow for deploying snapshot versions to Maven Central. Gated to the upstream
 ## Gradle Snapshot (`gradle-snapshot.yml`)
 
 Workflow for deploying snapshot versions to Gradle Central, similar to its Maven counterpart. Gated to the upstream repo so forks don't attempt to publish.
+
+## Gradle Release (`gradle-release.yml`)
+
+Workflow for releasing a Gradle project to Maven Central (Sonatype Central Portal). Gated to the upstream repo so forks cannot accidentally publish.
+
+**Prerequisites**: The calling project must apply [`io.github.simonhauck.release`](https://github.com/simonhauck/gradle-release-plugin)
+and configure [`com.gradleup.nmcp.settings`](https://gradleup.com/nmcp/) with credentials read from `MAVEN_USERNAME` / `MAVEN_PASSWORD`
+environment variables. The publish task must also be wired into the Gradle release graph (see below).
+
+- **Tasks**: Checkout code, configure Git, set up Java and Gradle, set HTTPS token on `origin`, run
+  `./gradlew release -PreleaseType=<type>` (which commits the release version, tags it, runs
+  `publishAggregationToCentralPortal` via caller-configured task dependency, commits the post-release
+  snapshot version, and pushes everything), then creates the GitHub Release.
+- **Inputs**: The following inputs are available to be overridden
+  * `release_type` (default: `minor`): Semver component to bump — `major`, `minor`, or `patch`
+  * `additional_release_args` (default: `''`): Extra Gradle args appended to the release command, e.g. `-Prelease=true`
+  * `ref_to_release` (default: `''`): Branch or commit to release
+  * `java_version` (default: `17`)
+  * `release_args` (default: `release`)
+  * `fetch_all_commits` (default: `false`)
+- **Secrets**: `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`
+- **Permissions**: `contents: write`
+
+**Required configuration in the calling project**:
+
+```kotlin
+// settings.gradle.kts
+plugins {
+    id("com.gradleup.nmcp.settings") version "<latest>"
+}
+
+nmcpSettings {
+    centralPortal {
+        username = System.getenv("MAVEN_USERNAME")
+        password = System.getenv("MAVEN_PASSWORD")
+        publishingType = "USER_MANAGED"
+    }
+}
+```
+
+```kotlin
+// build.gradle.kts
+plugins {
+    id("io.github.simonhauck.release") version "<latest>"
+}
+
+signing {
+    useInMemoryPgpKeys(
+        System.getenv("GPG_SIGNING_KEY"),
+        System.getenv("GPG_SIGNING_PASSWORD")
+    )
+    sign(publishing.publications)
+}
+
+// Wire publishAggregationToCentralPortal into the release task graph.
+// This ensures it runs after pushRelease but before the post-release snapshot
+// commit is written. If publishing fails the build stops; no snapshot bump is committed.
+tasks.named("writePostReleaseVersion") {
+    dependsOn("publishAggregationToCentralPortal")
+}
+```
+
+<details>
+<summary>Example caller workflow</summary>
+
+```yaml
+name: Gradle Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: '[Optional] Semver component to bump: major, minor, patch. Default: minor'
+        required: false
+        type: string
+        default: 'minor'
+
+jobs:
+  call-gradle-release:
+    permissions:
+      contents: write
+    uses: project-ncl/shared-github-actions/.github/workflows/gradle-release.yml@<sha> # <tag>
+    with:
+      release_type: ${{ inputs.release_type }}
+      # additional_release_args: '-Prelease=true'  # uncomment if your build requires it
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+```
+
+</details>
 
 ## SBT Snapshot (`sbt-snapshot.yml`)
 
