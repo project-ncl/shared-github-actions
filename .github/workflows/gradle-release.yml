@@ -1,0 +1,141 @@
+name: Gradle Release to Maven Central
+
+on:
+  workflow_call:
+    inputs:
+      ref_to_release:
+        description: 'Branch or commit to release. Default: Github default branch'
+        required: false
+        type: string
+        # default has to be a static string, no variables allowed
+        default: ''
+
+      java_version:
+        description: 'The Java version to use to compile. Default: 17'
+        required: false
+        type: string
+        default: '17'
+
+      release_type:
+        description: 'Semver component to bump: major, minor or patch. Default: minor'
+        required: false
+        type: string
+        default: 'minor'
+
+      release_args:
+        description: 'Gradle task(s) to invoke for the release step. Default: release'
+        required: false
+        type: string
+        default: 'release'
+
+      additional_release_args:
+        description: 'Extra Gradle arguments appended to the release command, e.g. -Prelease=true'
+        required: false
+        type: string
+        default: ''
+
+      fetch_all_commits:
+        description: 'Whether to fetch all commits. Default: false'
+        required: false
+        type: boolean
+        default: false
+
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+      GPG_PRIVATE_KEY:
+        required: true
+      GPG_PASSPHRASE:
+        required: true
+
+# cancel in-progress runs of the same workflow
+# to avoid unnecessary runs when multiple commits pushed
+# in a short period of time
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Allows pushing tags and commits
+
+    env:
+      # Logic: Use the user input if provided, otherwise fall back to the repo's default branch
+      FINAL_REF: ${{ inputs.ref_to_release || github.event.repository.default_branch }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: '${{ env.FINAL_REF }}'
+          fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+          persist-credentials: false
+          fetch-tags: true
+
+      - name: Configure Git User
+        run: |
+          # This sets the name and email for the commits made by gradle-release-plugin
+          git config --global user.name "github-actions[bot]"
+          # official github action email
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up JDK '${{ inputs.java_version }}'
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          java-version: '${{ inputs.java_version }}'
+          distribution: 'temurin'
+          cache: gradle
+          # Some Gradle projects read ~/.m2/settings.xml for Central credentials
+          server-id: central-publisher
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
+        with:
+          gradle-version: 'wrapper'
+
+      - name: Set git remote to HTTPS token URL
+        # gradle-release-plugin pushes commits and tags during ./gradlew release.
+        # We use the HTTPS token URL so no SSH key setup is needed, matching the
+        # approach used in maven-release.yml for its manual push step.
+        run: git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Gradle release
+        # publishAggregationToCentralPortal is invoked automatically here because
+        # the caller's build.gradle.kts must wire it via:
+        #   tasks.named("writePostReleaseVersion") { dependsOn("publishAggregationToCentralPortal") }
+        # This ensures publish runs after pushRelease but before the post-release
+        # snapshot commit is written. If publish fails the build stops and no
+        # snapshot bump is committed.
+        shell: bash
+        env:
+          INPUTS_RELEASE_ARGS: ${{ inputs.release_args }}
+          INPUTS_RELEASE_TYPE: ${{ inputs.release_type }}
+          INPUTS_ADDITIONAL_RELEASE_ARGS: ${{ inputs.additional_release_args }}
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          GPG_SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_SIGNING_PASSWORD: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          # shellcheck disable=SC2086
+          ./gradlew ${INPUTS_RELEASE_ARGS} -PreleaseType=${INPUTS_RELEASE_TYPE} ${INPUTS_ADDITIONAL_RELEASE_ARGS}
+
+      - name: Create the GH Release
+        run: |
+          # Fetch latest two tags sorted by creation date
+          TAGS=$(git tag --sort=-creatordate | head -n 2)
+          LATEST_TAG=$(echo "$TAGS" | sed -n '1p')
+          PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
+          echo "Creating release notes between ${LATEST_TAG} and ${PREVIOUS_TAG}"
+          gh release create --target "${LATEST_TAG}" --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
