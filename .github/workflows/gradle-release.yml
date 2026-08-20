@@ -16,12 +16,6 @@ on:
         type: string
         default: '17'
 
-      release_type:
-        description: 'Semver component to bump: major, minor or patch. Default: minor'
-        required: false
-        type: string
-        default: 'minor'
-
       release_args:
         description: 'Gradle task(s) to invoke for the release step. Default: release'
         required: false
@@ -119,7 +113,6 @@ jobs:
         shell: bash
         env:
           INPUTS_RELEASE_ARGS: ${{ inputs.release_args }}
-          INPUTS_RELEASE_TYPE: ${{ inputs.release_type }}
           INPUTS_ADDITIONAL_RELEASE_ARGS: ${{ inputs.additional_release_args }}
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -127,7 +120,7 @@ jobs:
           GPG_SIGNING_PASSWORD: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           # shellcheck disable=SC2086
-          ./gradlew ${INPUTS_RELEASE_ARGS} -PreleaseType=${INPUTS_RELEASE_TYPE} ${INPUTS_ADDITIONAL_RELEASE_ARGS}
+          ./gradlew ${INPUTS_RELEASE_ARGS} ${INPUTS_ADDITIONAL_RELEASE_ARGS}
 
       - name: Create the GH Release
         run: |
@@ -136,6 +129,6 @@ jobs:
           LATEST_TAG=$(echo "$TAGS" | sed -n '1p')
           PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
           echo "Creating release notes between ${LATEST_TAG} and ${PREVIOUS_TAG}"
-          gh release create --target "${LATEST_TAG}" --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
+          gh release create --target "${FINAL_REF}" --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
