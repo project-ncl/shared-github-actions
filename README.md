@@ -273,11 +273,10 @@ and configure [`com.gradleup.nmcp.settings`](https://gradleup.com/nmcp/) with cr
 environment variables. The publish task must also be wired into the Gradle release graph (see below).
 
 - **Tasks**: Checkout code, configure Git, set up Java and Gradle, set HTTPS token on `origin`, run
-  `./gradlew release -PreleaseType=<type>` (which commits the release version, tags it, runs
+  `./gradlew release` (which commits the release version, tags it, runs
   `publishAggregationToCentralPortal` via caller-configured task dependency, commits the post-release
   snapshot version, and pushes everything), then creates the GitHub Release.
 - **Inputs**: The following inputs are available to be overridden
-  * `release_type` (default: `minor`): Semver component to bump — `major`, `minor`, or `patch`
   * `additional_release_args` (default: `''`): Extra Gradle args appended to the release command, e.g. `-Prelease=true`
   * `ref_to_release` (default: `''`): Branch or commit to release
   * `java_version` (default: `17`)
