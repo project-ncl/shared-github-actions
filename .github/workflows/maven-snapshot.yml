@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: 'mvn -B -V deploy'
+      server_id:
+        description: 'The server ID to use for Maven Central. Default: central-publisher'
+        required: false
+        type: string
+        default: 'central-publisher'
       fetch_all_commits:
         description: 'Whether to fetch all commits. Default: false'
         required: false
@@ -73,8 +78,8 @@ jobs:
       with:
         java-version: '${{ inputs.java_version }}'  # java version to use
         distribution: 'temurin'
-        cache: maven                      # use cache for speed
-        server-id: central-publisher      # we use this in our pom.xml
+        cache: maven                         # use cache for speed
+        server-id: '${{ inputs.server_id }}' # as used in the pom.xml
         server-username: MAVEN_USERNAME   # env var name for username
         server-password:  MAVEN_PASSWORD  # env var name for password
 

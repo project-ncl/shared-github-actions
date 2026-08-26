@@ -255,6 +255,7 @@ Workflow for deploying snapshot versions to Maven Central. Gated to the upstream
   * project_name :  **Must** be set by the caller (format: <organisation>/<project_name>).
   * java_version (default: `21`)
   * snapshot_deploy_command (default `mvn -B -V deploy`)
+  * server_id (default: `central-publisher`)
   * fetch_all_commits (default: `false`)
   * quarkus_jib_image ( default: `false`)
   * jboss_parent_override: This is used to override variables from the jboss-parent (default `-Dcentral.serverId=central-publisher -Dcentral.sonatype.url=https://central.sonatype.com/repository/maven-snapshots -Pcentral-release -Dgpg.skip`)
