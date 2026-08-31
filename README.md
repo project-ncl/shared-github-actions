@@ -240,6 +240,7 @@ Workflow for performing a release to Maven Central (Sonatype). This can be manua
   * ref_to_release (default: `''`)
   * java_version (default: `21`)
   * release_command (default `mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false`)
+  * server_id (default: `central-publisher`)
   * fetch_all_commits (default: `false`)
   * jboss_parent_override: This is used to override variables from the jboss-parent (default `-Dcentral.serverId=central-publisher -Dcentral.autoPublish=false -DreleaseProfile=central-release -DsignTag=false`)
 - **Permissions**: `contents: write`

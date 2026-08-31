@@ -26,6 +26,11 @@ on:
         #              and instead uses https://github.com + github token.
         #              We'll manually push it later
         default: 'mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false -DcompletionGoals="spotless:apply"'
+      server_id:
+        description: 'The server ID to use for Maven Central. Default: central-publisher'
+        required: false
+        type: string
+        default: 'central-publisher'
 
       fetch_all_commits:
         description: 'Whether to fetch all commits. Default: false'
@@ -97,7 +102,7 @@ jobs:
         java-version: '${{ inputs.java_version }}'
         distribution: 'temurin'
         cache: maven
-        server-id: central-publisher    # Matches the ID in your pom's distributionManagement
+        server-id: '${{ inputs.server_id }}' # matches the ID in the pom's distributionManagement
         server-username: MAVEN_USERNAME # Env variable name
         server-password: MAVEN_PASSWORD # env var secret
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
