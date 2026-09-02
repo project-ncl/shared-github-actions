@@ -477,6 +477,8 @@ Also has a `TAGS` property to associate Mend scan run with some data (e.g. branc
 
 A sample dependabot file in `.github/dependabot.yml` is available that is both used in this repository and may be copied to other ProjectNCL repositories.
 
+**NOTE** - the developer must uncomment the appropriate package ecosystem when copying the file.
+
 ## GitHub Releases
 A sample `.github/release.yml` configuration file from the [GitHub documentation](https://docs.github.com/en/repositories/releasing-projects-on-github/automatically-generated-release-notes#configuring-automatically-generated-release-notes) has been added that may be copied to other ProjectNCL repositories.
 
