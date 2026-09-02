@@ -31,6 +31,9 @@ inputs:
     description: "Comma-separated list of file paths to exclude from SAST scan (e.g. 'dir1/**,dir2/file.txt')"
     required: false
     default: ""
+  upload_results:
+    description: "Whether to upload Mend scan results. Should be false for PR scans"
+    required: true
   source_ref:
     description: "Git ref to associate findings with (e.g. 'refs/pull/123/head'). Defaults to the workflow's ref"
     required: false
@@ -62,15 +65,17 @@ runs:
         TAGS: ${{ inputs.TAGS }}
         SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
         SCA_EXCLUDE_CONFIGURATIONS: ${{ inputs.SCA_EXCLUDE_CONFIGURATIONS }}
+        UPLOAD_RESULTS: ${{ inputs.upload_results }}
       run: |
-        REACHABILITY_SCAN=$([[ "$SCA_REACHABILITY" == "true" ]] && echo "-r" || echo "")
+        REACHABILITY_ARG=(); [[ "$SCA_REACHABILITY" == "true" ]] && REACHABILITY_ARG=(-r)
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
-        TAGS_ARG=()
-        [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        TAGS_ARG=(${TAGS:+--tags "$TAGS"})
+        UPLOAD_ARG=(); [[ "$UPLOAD_RESULTS" == "true" ]] && UPLOAD_ARG=(-u)
+
         export MEND_SCA_PATH_EXCLUSIONS="$SCA_EXCLUDES"
         export MEND_SCA_EXCLUDE_DEP_CLASS="$SCA_EXCLUDE_CONFIGURATIONS"
 
-        mend dep -u $REACHABILITY_SCAN --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
+        mend dep "${UPLOAD_ARG[@]}" "${REACHABILITY_ARG[@]}" --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
         SCAN_EXIT=${SCAN_EXIT:-0}
 
         mkdir -p ~/.mend/logs
@@ -86,13 +91,15 @@ runs:
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         TAGS: ${{ inputs.TAGS }}
         SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
+        UPLOAD_RESULTS: ${{ inputs.upload_results }}
       run: |
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
-        TAGS_ARG=()
-        [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        TAGS_ARG=(${TAGS:+--tags "$TAGS"})
+        OFFLINE_ARG=(); [[ "$UPLOAD_RESULTS" == "false" ]] && OFFLINE_ARG=(--offline)
+
         export MEND_SAST_PATH_EXCLUSIONS="$SAST_EXCLUDES"
 
-        mend code -r --formats sarif --filename sast-results --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
+        mend code "${OFFLINE_ARG[@]}" -r --formats sarif --filename sast-results --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
         SCAN_EXIT=${SCAN_EXIT:-0}
 
         mkdir -p ~/.mend/logs

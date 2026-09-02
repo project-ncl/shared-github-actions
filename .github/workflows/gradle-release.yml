@@ -22,6 +22,12 @@ on:
         type: string
         default: 'release'
 
+      server_id:
+        description: 'The server ID to use for Maven Central. Default: central-publisher'
+        required: false
+        type: string
+        default: 'central-publisher'
+
       additional_release_args:
         description: 'Extra Gradle arguments appended to the release command, e.g. -Prelease=true'
         required: false
@@ -84,7 +90,7 @@ jobs:
           distribution: 'temurin'
           cache: gradle
           # Some Gradle projects read ~/.m2/settings.xml for Central credentials
-          server-id: central-publisher
+          server-id: '${{ inputs.server_id }}'
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}

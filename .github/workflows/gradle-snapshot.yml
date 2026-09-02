@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      server_id:
+        description: 'The server ID to use for Maven Central. Default: central-publisher'
+        required: false
+        type: string
+        default: 'central-publisher'
       snapshot_deploy_args:
         description: "The snapshot args for gradle tool. Default: build publishToCentral -x test -x funcTest"
         required: false
@@ -50,7 +55,7 @@ jobs:
           java-version: "${{ inputs.java_version }}"
           distribution: "temurin"
           cache: gradle
-          server-id: central-publisher # we use this in our pom.xml
+          server-id: '${{ inputs.server_id }}'
           server-username: MAVEN_USERNAME # env var name for username
           server-password: MAVEN_PASSWORD # env var name for password
 
