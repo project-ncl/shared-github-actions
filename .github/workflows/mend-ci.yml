@@ -127,7 +127,7 @@ jobs:
             return check.id;
 
       - name: Run Mend CLI scan
-        uses: project-ncl/shared-github-actions/.github/actions/mend@646d9b629925d6405fb06ed1476aefd6b2cdca86 # v0.0.23
+        uses: project-ncl/shared-github-actions/.github/actions/mend@fee8058759b74bf6bd93e165e6e53b6d47112495 # main
         with:
           PROJECT_NAME: ${{ github.event.repository.name }}
           TAGS: >-
@@ -140,6 +140,10 @@ jobs:
           SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
           SCA_EXCLUDE_CONFIGURATIONS: ${{ inputs.SCA_EXCLUDE_CONFIGURATIONS }}
           SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
+          PR_SCAN: >-
+            ${{ inputs.pr_feedback
+                || github.event_name == 'pull_request'
+                || github.event.workflow_run.event == 'pull_request' }}
           source_ref: ${{ steps.metadata.outputs.pr_number && format('refs/pull/{0}/head', steps.metadata.outputs.pr_number) || '' }}
           source_sha: ${{ steps.metadata.outputs.pr_sha || '' }}
 
