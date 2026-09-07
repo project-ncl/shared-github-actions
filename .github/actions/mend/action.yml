@@ -9,6 +9,10 @@ inputs:
     description: "Comma-separated key:value tags for this scan (e.g. 'a:123, b:456')"
     required: false
     default: ""
+  PR_SCAN:
+    description: "Whether this is a PR scan. Outputs PR scans to '<project>-pr' Mend project so they don't interfere with 'main' scans"
+    required: false
+    default: "false"
   SCA:
     description: "Run SCA scan"
     required: true
@@ -62,15 +66,17 @@ runs:
         TAGS: ${{ inputs.TAGS }}
         SCA_EXCLUDES: ${{ inputs.SCA_EXCLUDES }}
         SCA_EXCLUDE_CONFIGURATIONS: ${{ inputs.SCA_EXCLUDE_CONFIGURATIONS }}
+        PR_SCAN: ${{ inputs.PR_SCAN }}
       run: |
-        REACHABILITY_SCAN=$([[ "$SCA_REACHABILITY" == "true" ]] && echo "-r" || echo "")
-        MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
-        TAGS_ARG=()
-        [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        REACHABILITY_ARG=(); [[ "$SCA_REACHABILITY" == "true" ]] && REACHABILITY_ARG=(-r)
+        PROJECT="$PROJECT_NAME"; [[ "$PR_SCAN" == "true" ]] && SCOPE_PROJECT="${PROJECT_NAME}-pr"
+        MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT}"
+        TAGS_ARG=(${TAGS:+--tags "$TAGS"})
+
         export MEND_SCA_PATH_EXCLUSIONS="$SCA_EXCLUDES"
         export MEND_SCA_EXCLUDE_DEP_CLASS="$SCA_EXCLUDE_CONFIGURATIONS"
 
-        mend dep -u $REACHABILITY_SCAN --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
+        mend dep -u "${REACHABILITY_ARG[@]}" --fail-policy --export-results sca-results.txt --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
         SCAN_EXIT=${SCAN_EXIT:-0}
 
         mkdir -p ~/.mend/logs
@@ -86,10 +92,12 @@ runs:
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         TAGS: ${{ inputs.TAGS }}
         SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
+        PR_SCAN: ${{ inputs.PR_SCAN }}
       run: |
-        MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT_NAME}"
-        TAGS_ARG=()
-        [[ -n "$TAGS" ]] && TAGS_ARG=(--tags "$TAGS")
+        PROJECT="$PROJECT_NAME"; [[ "$PR_SCAN" == "true" ]] && SCOPE_PROJECT="${PROJECT_NAME}-pr"
+        MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT}"
+        TAGS_ARG=(${TAGS:+--tags "$TAGS"})
+
         export MEND_SAST_PATH_EXCLUSIONS="$SAST_EXCLUDES"
 
         mend code -r --formats sarif --filename sast-results --non-interactive --scope "$MEND_SCOPE" "${TAGS_ARG[@]}" || SCAN_EXIT=$?
