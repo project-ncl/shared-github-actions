@@ -69,7 +69,7 @@ runs:
         PR_SCAN: ${{ inputs.PR_SCAN }}
       run: |
         REACHABILITY_ARG=(); [[ "$SCA_REACHABILITY" == "true" ]] && REACHABILITY_ARG=(-r)
-        PROJECT="$PROJECT_NAME"; [[ "$PR_SCAN" == "true" ]] && SCOPE_PROJECT="${PROJECT_NAME}-pr"
+        PROJECT="$PROJECT_NAME"; [[ "$PR_SCAN" == "true" ]] && PROJECT="${PROJECT_NAME}-pr"
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT}"
         TAGS_ARG=(${TAGS:+--tags "$TAGS"})
 
@@ -94,7 +94,7 @@ runs:
         SAST_EXCLUDES: ${{ inputs.SAST_EXCLUDES }}
         PR_SCAN: ${{ inputs.PR_SCAN }}
       run: |
-        PROJECT="$PROJECT_NAME"; [[ "$PR_SCAN" == "true" ]] && SCOPE_PROJECT="${PROJECT_NAME}-pr"
+        PROJECT="$PROJECT_NAME"; [[ "$PR_SCAN" == "true" ]] && PROJECT="${PROJECT_NAME}-pr"
         MEND_SCOPE="${MEND_ORGNAME}//${MEND_PRODUCTNAME}//${PROJECT}"
         TAGS_ARG=(${TAGS:+--tags "$TAGS"})
 
