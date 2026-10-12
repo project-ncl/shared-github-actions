@@ -22,6 +22,16 @@ on:
         required: false
         type: string
         default: "build publishToCentral -x test -x funcTest"
+      upload_coverage:
+        description: "Whether to upload coverage to Codecov. Default: false"
+        required: false
+        type: boolean
+        default: false
+      coverage_files:
+        description: "Coverage report files to upload when 'upload_coverage' is true."
+        required: false
+        type: string
+        default: ""
 
     secrets:
       SONATYPE_USERNAME:
@@ -73,3 +83,11 @@ jobs:
         run: |
           # shellcheck disable=SC2086
           ./gradlew ${INPUTS_SNAPSHOT_DEPLOY_ARGS}
+
+      - name: Codecov
+        if: inputs.upload_coverage
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: ${{ inputs.coverage_files }}
+          verbose: true
+
