@@ -104,12 +104,28 @@ jobs:
         gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
     - name: Publish to Central
-      run: bash -c "${INPUTS_RELEASE_COMMAND} ${{ inputs.quarkus_jib_image && '-Dquarkus.container-image.build=true -Dquarkus.container-image.group=rh-newcastle -Dquarkus.container-image.push=true' || '' }}"
+      # release:perform forks a fresh Maven build in target/checkout, and that
+      # fork only inherits properties passed inside -Darguments. The Quarkus
+      # container-image flags must therefore be injected into -Darguments rather
+      # than appended to the outer command (where the fork never sees them, so no
+      # image gets built or pushed).
+      run: |
+        RELEASE_CMD="${INPUTS_RELEASE_COMMAND}"
+        if [ "${QUARKUS_JIB_IMAGE}" = "true" ]; then
+          JIB_ARGS='-Dquarkus.container-image.build=true -Dquarkus.container-image.group=rh-newcastle -Dquarkus.container-image.push=true'
+          if printf '%s' "${RELEASE_CMD}" | grep -q -- '-Darguments='; then
+            RELEASE_CMD=$(printf '%s' "${RELEASE_CMD}" | sed -E "s#(-Darguments=[^\"]*)\"#\1 ${JIB_ARGS}\"#")
+          else
+            RELEASE_CMD="${RELEASE_CMD} \"-Darguments=${JIB_ARGS}\""
+          fi
+        fi
+        bash -c "${RELEASE_CMD}"
       env:
         MAVEN_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
         MAVEN_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         INPUTS_RELEASE_COMMAND: ${{ inputs.release_command }} ${{ inputs.jboss_parent_override }}
+        QUARKUS_JIB_IMAGE: ${{ inputs.quarkus_jib_image }}
 
     - name: Push all the git commits and tags back to the repository
       run: |
