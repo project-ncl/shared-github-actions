@@ -74,8 +74,8 @@ jobs:
         distribution: 'temurin'
         cache: maven                      # use cache for speed
         server-id: central-publisher      # we use this in our pom.xml
-        server-username: MAVEN_USERNAME   # env var name for username
-        server-password:  MAVEN_PASSWORD  # env var name for password
+        server-username-env-var: MAVEN_USERNAME   # env var name for username
+        server-password-env-var:  MAVEN_PASSWORD  # env var name for password
 
     - name: Extract Project version
       id: project-version

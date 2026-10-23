@@ -102,10 +102,10 @@ jobs:
         distribution: 'temurin'
         cache: maven
         server-id: central-publisher    # Matches the ID in your pom's distributionManagement
-        server-username: MAVEN_USERNAME # Env variable name
-        server-password: MAVEN_PASSWORD # env var secret
+        server-username-env-var: MAVEN_USERNAME # Env variable name
+        server-password-env-var: MAVEN_PASSWORD # env var secret
         gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+        gpg-passphrase-env-var: MAVEN_GPG_PASSPHRASE
 
     - name: Publish to Central
       # release:perform forks a fresh Maven build in target/checkout, and that
