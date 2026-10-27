@@ -21,7 +21,7 @@ on:
         description: "The build command to use. Default: mvn clean install"
         required: false
         type: string
-        default: "mvn -B -V clean install"
+        default: "mvn -U -B -V clean install"
       fetch_all_commits:
         description: "Whether to fetch all commits. Default: false"
         required: false
