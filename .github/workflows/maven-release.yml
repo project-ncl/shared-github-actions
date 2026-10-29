@@ -130,8 +130,8 @@ jobs:
         MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         INPUTS_RELEASE_COMMAND: ${{ inputs.release_command }} ${{ inputs.jboss_parent_override }}
         QUARKUS_JIB_IMAGE: ${{ inputs.quarkus_jib_image }}
-        QUARKUS_CONTAINER_IMAGE_USERNAME: ${{ secrets.QUAY_USERNAME || '' }}
-        QUARKUS_CONTAINER_IMAGE_PASSWORD: ${{ secrets.QUAY_PASSWORD || '' }}
+        QUARKUS_CONTAINER_IMAGE_USERNAME: ${{ secrets.QUAY_USERNAME }}
+        QUARKUS_CONTAINER_IMAGE_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
 
     - name: Push all the git commits and tags back to the repository
       run: |
