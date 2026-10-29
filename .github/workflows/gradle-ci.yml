@@ -67,7 +67,7 @@ jobs:
           PRE_BUILD_SCRIPT: ${{ inputs.pre_build_script }}
         run: bash -c "${PRE_BUILD_SCRIPT}"
 
-      - uses: project-ncl/shared-github-actions/.github/actions/gradle-build@9735924b878ff3890cfaf16acb28e06531963ebf # v0.0.25
+      - uses: project-ncl/shared-github-actions/.github/actions/gradle-build@461b242bf215856b94e7b40f1ecfa06f7ebb1b45 # v0.0.26
         with:
           java_version: ${{ inputs.java_version }}
           gradle_version: ${{ inputs.gradle_version }}
