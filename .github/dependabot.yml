@@ -59,3 +59,7 @@ updates:
     # a compromised new version
     cooldown:
       default-days: 7
+      # Exclude our own shared actions repo from cooldown
+      # https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#cooldown-
+      exclude:
+        - "project-ncl/shared-github-actions"
