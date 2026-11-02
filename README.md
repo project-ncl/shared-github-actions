@@ -16,6 +16,7 @@
   - [Gradle Snapshot (`gradle-snapshot.yml`)](#gradle-snapshot-gradle-snapshotyml)
   - [Gradle Release (`gradle-release.yml`)](#gradle-release-gradle-releaseyml)
   - [SBT Snapshot (`sbt-snapshot.yml`)](#sbt-snapshot-sbt-snapshotyml)
+  - [SBT Release (`sbt-release.yml`)](#sbt-release-sbt-releaseyml)
   - [Maven Set Version (`maven-set-version.yml`)](#maven-set-version-maven-set-versionyml)
   - [Jib Image Updater (`maven-jib-image-updater.yml`)](#jib-image-updater-maven-jib-image-updateryml)
   - [Validate GitHub Action (`validate-gh-action.yml`)](#validate-github-action-validate-gh-actionyml)
@@ -365,6 +366,102 @@ jobs:
 Workflow for deploying snapshot versions to Sonatype Nexus, similar to its Maven counterpart. Gated to the upstream repo so forks don't attempt to publish.
 
 The workflow writes `~/.sbt/.credentials` for SBT to authenticate against the snapshot repository.
+
+## SBT Release (`sbt-release.yml`)
+
+Workflow for releasing an SBT project to Maven Central (Sonatype Central Portal). Gated to the upstream repo so forks cannot accidentally publish.
+
+**Prerequisites**: The calling project must use sbt 1.11 or later (for `localStaging` and `sonaRelease`), and apply
+[`sbt-release`](https://github.com/sbt/sbt-release) and [`sbt-pgp`](https://github.com/sbt/sbt-pgp), with the version
+in `version.sbt` (the file updated by `sbt-release`).
+
+- **Tasks**: Checkout code, configure Git, set up Java (importing the GPG key) and SBT, configure the resolvers and
+  `~/.sbt/.credentials` for `central.sonatype.com`, set HTTPS token on `origin`, run `sbt "release with-defaults"`
+  (which, with the release process below, commits the release version, tags it, publishes the signed artifacts to the
+  Central Portal, commits the next snapshot version, and pushes everything), then creates the GitHub Release.
+- **Inputs**: The following inputs are available to be overridden
+  * `project_name` (required): Name in `<organisation>/<project_name>` format, the job only runs in that repository
+  * `ref_to_release` (default: `''`): Branch to release (a branch, so that `sbt-release` can push to it)
+  * `release_version` (default: `''`): Version to release, passed as `release-version`
+  * `next_version` (default: `''`): Next snapshot version, passed as `next-version`
+  * `additional_release_args` (default: `''`): Extra `sbt-release` arguments, e.g. `skip-tests`
+  * `java_version` (default: `8`)
+  * `resolvers` (default: same as `sbt-ci.yml`)
+  * `fetch_all_commits` (default: `false`)
+- **Secrets**: `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`
+- **Permissions**: `contents: write`
+
+`sbt-release` pushes the release and next-version commits, and the tag, with `GITHUB_TOKEN`: the release fails at the
+very end, after publishing to Maven Central, if branch protection doesn't allow `github-actions[bot]` to push to the
+released branch. A second release of the same ref is queued, not cancelled, so that a run is never stopped midway.
+
+**Required configuration in the calling project**:
+
+```scala
+// project/plugins.sbt
+addSbtPlugin("com.github.sbt" % "sbt-pgp" % "<latest>")
+addSbtPlugin("com.github.sbt" % "sbt-release" % "<latest>")
+```
+
+```scala
+// build.sbt
+ThisBuild / publishTo := {
+  if (isSnapshot.value) Some("Sonatype Nexus Repository Manager" at "https://central.sonatype.com/repository/maven-snapshots/")
+  else localStaging.value
+}
+ThisBuild / credentials += Credentials(Path.userHome / ".sbt" / ".credentials")
+// plus the metadata required by Maven Central: description, homepage, licenses, scmInfo, developers
+
+releaseProcess := {
+  import sbtrelease.ReleaseStateTransformations._
+  Seq[ReleaseStep](
+    checkSnapshotDependencies,
+    inquireVersions,
+    runClean,
+    runTest,
+    setReleaseVersion,
+    commitReleaseVersion, // its check, run before any step, aborts on uncommitted changes
+    tagRelease,
+    releaseStepCommand("publishSigned"),
+    releaseStepCommand("sonaRelease"),
+    setNextVersion,
+    commitNextVersion,
+    pushChanges
+  )
+}
+```
+
+<details>
+<summary>Example caller workflow</summary>
+
+```yaml
+name: SBT Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: '[Optional] Version to release. Default: the version in version.sbt without -SNAPSHOT'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  call-sbt-release:
+    permissions:
+      contents: write
+    uses: project-ncl/shared-github-actions/.github/workflows/sbt-release.yml@<sha> # <tag>
+    with:
+      project_name: 'project-ncl/<project>'
+      release_version: ${{ inputs.release_version }}
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+```
+
+</details>
 
 ## Maven Set Version (`maven-set-version.yml`)
 Workflow to update the version in a Maven `pom.xml`. This can be manually run by going to the GitHub Actions tab and selecting the workflow.
