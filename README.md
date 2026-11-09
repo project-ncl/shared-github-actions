@@ -55,6 +55,7 @@ the Java version etc. It is possible to use this within a matrix job.
   * fetch_all_commits (default: `false`)
   * maven_version (default: `3.9.15`)
   * upload_artifacts (default: `false`)
+  * pre_pull_docker_images (default: empty, opt-in): comma-separated list of Docker images (e.g. `quay.io/keycloak/keycloak:21.1.0,redis:7.2`) to `docker pull` in the background right after checkout, so the download overlaps with Java/Maven setup and the build instead of Testcontainers pulling them lazily and serially. No images are cached and no registry login is performed (public images only). A failed pull is harmless: the image is then pulled on demand as usual
 - **Permissions**: `contents: read`
 
 <details>

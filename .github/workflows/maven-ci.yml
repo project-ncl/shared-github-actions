@@ -38,6 +38,11 @@ on:
         required: false
         type: boolean
         default: false
+      pre_pull_docker_images:
+        description: "Comma-separated list of Docker images to pull in the background before the build starts (e.g. images used by Testcontainers). Default: empty, nothing is pulled"
+        required: false
+        type: string
+        default: ""
 
 # cancel in-progress runs of the same workflow
 # to avoid unnecessary runs when multiple commits pushed
@@ -58,6 +63,26 @@ jobs:
         with:
           fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
           persist-credentials: false
+
+      # Detached pulls carry on after this step ends, so they overlap with the Java/Maven setup and the build.
+      # Failures are harmless: Testcontainers pulls any missing image itself when it is first needed.
+      - name: Pre-pull Docker images in background
+        if: inputs.pre_pull_docker_images != ''
+        env:
+          INPUTS_PRE_PULL_DOCKER_IMAGES: ${{ inputs.pre_pull_docker_images }}
+        run: |
+          IFS=',' read -ra images <<< "${INPUTS_PRE_PULL_DOCKER_IMAGES}"
+          for image in "${images[@]}"; do
+            image="$(echo "${image}" | xargs)"
+            [ -n "${image}" ] || continue
+            if [[ ! "${image}" =~ ^[a-zA-Z0-9][a-zA-Z0-9._/:@-]*$ ]]; then
+              echo "::warning::Skipping invalid Docker image name '${image}'"
+              continue
+            fi
+            echo "Pre-pulling ${image} in background"
+            setsid docker pull -- "${image}" > /dev/null 2>&1 < /dev/null &
+            disown
+          done
 
       - uses: project-ncl/shared-github-actions/.github/actions/maven-build@e7102dd3bf74f91aaccae7a3539241c03a652d1a # v0.0.27
         with:
