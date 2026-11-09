@@ -66,15 +66,14 @@ jobs:
 
       # Detached pulls carry on after this step ends, so they overlap with the Java/Maven setup and the build.
       # Failures are harmless: Testcontainers pulls any missing image itself when it is first needed.
-      # A detached process cannot log into this step once it has ended, so each pull writes its output and
-      # result under RUNNER_TEMP, which the 'Report Docker pre-pull results' step below prints.
+      # Each pull writes <n>.log (image name on the first line, then the pull output) and, once finished,
+      # <n>.rc (exit code and seconds taken). The 'Report Docker pre-pull results' step prints them.
       - name: Pre-pull Docker images in background
         if: inputs.pre_pull_docker_images != ''
         env:
           INPUTS_PRE_PULL_DOCKER_IMAGES: ${{ inputs.pre_pull_docker_images }}
         run: |
-          dir="${RUNNER_TEMP}/pre-pull-docker-images"
-          mkdir -p -- "${dir}"
+          mkdir -p -- "${RUNNER_TEMP}/pre-pull"
           n=0
           IFS=',' read -ra images <<< "${INPUTS_PRE_PULL_DOCKER_IMAGES}"
           for image in "${images[@]}"; do
@@ -84,19 +83,11 @@ jobs:
               echo "::warning::Skipping invalid Docker image name '${image}'"
               continue
             fi
-            n=$((n + 1))
-            base="${dir}/${n}"
-            printf '%s\n' "${image}" > "${base}.image"
             echo "Pre-pulling ${image} in background"
-            # image and path are passed as arguments, never interpolated into the script.
-            # The .status file (exit code and seconds taken) appears atomically once the pull has finished.
+            base="${RUNNER_TEMP}/pre-pull/$((++n))"
+            echo "${image}" > "${base}.log"
             # shellcheck disable=SC2016
-            setsid bash -c '
-              start=$(date +%s)
-              docker pull -- "$1" > "$2.log" 2>&1
-              rc=$?
-              printf "%s %s\n" "${rc}" "$(( $(date +%s) - start ))" > "$2.status.tmp" && mv -f -- "$2.status.tmp" "$2.status"
-            ' _ "${image}" "${base}" > /dev/null 2>&1 < /dev/null &
+            setsid bash -c 'docker pull -- "$1" >> "$2.log" 2>&1; echo "$? ${SECONDS}" > "$2.rc"' _ "${image}" "${base}" > /dev/null 2>&1 < /dev/null &
             disown
           done
 
@@ -107,29 +98,24 @@ jobs:
           maven_version: ${{ inputs.maven_version }}
 
       - name: Report Docker pre-pull results
-        # Also on failure/cancel, a failed pre-pull can explain a slow or failing integration test
+        # Also on failure: a failed pre-pull can explain a slow or failing integration test
         if: always() && inputs.pre_pull_docker_images != ''
         run: |
-          dir="${RUNNER_TEMP}/pre-pull-docker-images"
-          for imagefile in "${dir}"/*.image; do
-            [ -e "${imagefile}" ] || continue
-            base="${imagefile%.image}"
-            image="$(cat "${imagefile}")"
-            if [ -f "${base}.status" ]; then
-              read -r rc secs < "${base}.status"
-              if [ "${rc}" = "0" ]; then
-                echo "::group::Pre-pulled ${image} in ${secs}s"
-              else
-                echo "::warning::Pre-pull of ${image} failed (exit code ${rc}) after ${secs}s, Testcontainers pulls it on demand instead"
-                echo "::group::Pre-pull of ${image} failed"
-              fi
+          for log in "${RUNNER_TEMP}"/pre-pull/*.log; do
+            [ -e "${log}" ] || continue
+            image="$(head -n 1 "${log}")"
+            rc="" secs=""
+            [ ! -f "${log%.log}.rc" ] || read -r rc secs < "${log%.log}.rc"
+            if [ "${rc}" = "0" ]; then
+              echo "✅ Pre-pulled ${image} in ${secs}s"
             else
-              echo "::notice::Pre-pull of ${image} was still running when the build ended"
-              echo "::group::Pre-pull of ${image} still running"
+              status="${rc:+exit ${rc} after ${secs}s}"
+              echo "::warning::❌ Pre-pull of ${image} did not succeed (${status:-still running}), Testcontainers pulls it on demand instead"
+              echo "::group::Pre-pull log for ${image}"
+              # Registry output is untrusted: stop it from being interpreted as workflow commands
+              sed 's/::/: :/g' "${log}"
+              echo "::endgroup::"
             fi
-            # Registry output is untrusted: stop it from being interpreted as workflow commands
-            tail -n 20 -- "${base}.log" 2>/dev/null | sed 's/::/: :/g'
-            echo "::endgroup::"
           done
 
       - name: Check for wrong code formatting
