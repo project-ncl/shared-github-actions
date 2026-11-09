@@ -66,11 +66,16 @@ jobs:
 
       # Detached pulls carry on after this step ends, so they overlap with the Java/Maven setup and the build.
       # Failures are harmless: Testcontainers pulls any missing image itself when it is first needed.
+      # A detached process cannot log into this step once it has ended, so each pull writes its output and
+      # result under RUNNER_TEMP, which the 'Report Docker pre-pull results' step below prints.
       - name: Pre-pull Docker images in background
         if: inputs.pre_pull_docker_images != ''
         env:
           INPUTS_PRE_PULL_DOCKER_IMAGES: ${{ inputs.pre_pull_docker_images }}
         run: |
+          dir="${RUNNER_TEMP}/pre-pull-docker-images"
+          mkdir -p -- "${dir}"
+          n=0
           IFS=',' read -ra images <<< "${INPUTS_PRE_PULL_DOCKER_IMAGES}"
           for image in "${images[@]}"; do
             image="$(echo "${image}" | xargs)"
@@ -79,8 +84,19 @@ jobs:
               echo "::warning::Skipping invalid Docker image name '${image}'"
               continue
             fi
+            n=$((n + 1))
+            base="${dir}/${n}"
+            printf '%s\n' "${image}" > "${base}.image"
             echo "Pre-pulling ${image} in background"
-            setsid docker pull -- "${image}" > /dev/null 2>&1 < /dev/null &
+            # image and path are passed as arguments, never interpolated into the script.
+            # The .status file (exit code and seconds taken) appears atomically once the pull has finished.
+            # shellcheck disable=SC2016
+            setsid bash -c '
+              start=$(date +%s)
+              docker pull -- "$1" > "$2.log" 2>&1
+              rc=$?
+              printf "%s %s\n" "${rc}" "$(( $(date +%s) - start ))" > "$2.status.tmp" && mv -f -- "$2.status.tmp" "$2.status"
+            ' _ "${image}" "${base}" > /dev/null 2>&1 < /dev/null &
             disown
           done
 
@@ -89,6 +105,32 @@ jobs:
           java_version: ${{ inputs.java_version }}
           build_command: ${{ inputs.build_command }}
           maven_version: ${{ inputs.maven_version }}
+
+      - name: Report Docker pre-pull results
+        # Also on failure/cancel, a failed pre-pull can explain a slow or failing integration test
+        if: always() && inputs.pre_pull_docker_images != ''
+        run: |
+          dir="${RUNNER_TEMP}/pre-pull-docker-images"
+          for imagefile in "${dir}"/*.image; do
+            [ -e "${imagefile}" ] || continue
+            base="${imagefile%.image}"
+            image="$(cat "${imagefile}")"
+            if [ -f "${base}.status" ]; then
+              read -r rc secs < "${base}.status"
+              if [ "${rc}" = "0" ]; then
+                echo "::group::Pre-pulled ${image} in ${secs}s"
+              else
+                echo "::warning::Pre-pull of ${image} failed (exit code ${rc}) after ${secs}s, Testcontainers pulls it on demand instead"
+                echo "::group::Pre-pull of ${image} failed"
+              fi
+            else
+              echo "::notice::Pre-pull of ${image} was still running when the build ended"
+              echo "::group::Pre-pull of ${image} still running"
+            fi
+            # Registry output is untrusted: stop it from being interpreted as workflow commands
+            tail -n 20 -- "${base}.log" 2>/dev/null | sed 's/::/: :/g'
+            echo "::endgroup::"
+          done
 
       - name: Check for wrong code formatting
         # Straight after a maven-release the release plugin might have altered the format slightly. Don't fail
