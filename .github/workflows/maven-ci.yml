@@ -119,9 +119,6 @@ jobs:
           done
 
       - name: Check for wrong code formatting
-        # Straight after a maven-release the release plugin might have altered the format slightly. Don't fail
-        # dependabot updates on formatting changes.
-        if: github.actor != 'dependabot[bot]'
         run: |
           if [[ -n $(git status --porcelain) ]]; then
               echo "Code formatting errors"
