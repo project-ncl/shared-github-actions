@@ -72,7 +72,7 @@ jobs:
           fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
           persist-credentials: false
 
-      - uses: project-ncl/shared-github-actions/.github/actions/sbt-build@e7102dd3bf74f91aaccae7a3539241c03a652d1a # v0.0.27
+      - uses: project-ncl/shared-github-actions/.github/actions/sbt-build@af62bc3c8181df77581ddf64859f9bba9129fcad # v0.0.28
         with:
           java_version: ${{ inputs.java_version }}
           resolvers: ${{ inputs.resolvers }}
