@@ -146,7 +146,7 @@ jobs:
     - name: Create the GH Release
       run: |
         # Fetch latest two tags sorted by creation date
-        TAGS=$(git tag --sort=-creatordate | head -n 2)
+        TAGS=$(git tag --sort=-creatordate --merged "$FINAL_REF" | head -n 2)
         LATEST_TAG=$(echo "$TAGS" | sed -n '1p')
         PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
         echo "Creating release notes between ${LATEST_TAG} and ${PREVIOUS_TAG}"
