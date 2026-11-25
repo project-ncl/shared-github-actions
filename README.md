@@ -244,7 +244,6 @@ Releases <= v0.0.24 are compatible with `jboss-parent` <= v53. v0.0.25 upward re
   * ref_to_release (default: `''`)
   * java_version (default: `21`)
   * release_command (default `mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false`)
-  * fetch_all_commits (default: `false`)
   * jboss_parent_override: This is used to override variables from the jboss-parent (default `-Dcentral.serverId=central-publisher -Dcentral.autoPublish=false -DreleaseProfile=central-release -DsignTag=false`)
 - **Permissions**: `contents: write`
 
@@ -287,7 +286,6 @@ environment variables. The publish task must also be wired into the Gradle relea
   * `ref_to_release` (default: `''`): Branch or commit to release
   * `java_version` (default: `17`)
   * `release_args` (default: `release`)
-  * `fetch_all_commits` (default: `false`)
 - **Secrets**: `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`
 - **Permissions**: `contents: write`
 
@@ -388,7 +386,6 @@ in `version.sbt` (the file updated by `sbt-release`).
   * `additional_release_args` (default: `''`): Extra `sbt-release` arguments, e.g. `skip-tests`
   * `java_version` (default: `8`)
   * `resolvers` (default: same as `sbt-ci.yml`)
-  * `fetch_all_commits` (default: `false`)
 - **Secrets**: `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`, `GPG_PRIVATE_KEY`, `GPG_PASSPHRASE`
 - **Permissions**: `contents: write`
 

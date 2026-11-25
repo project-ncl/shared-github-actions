@@ -27,11 +27,6 @@ on:
         #              We'll manually push it later
         default: 'mvn -B -V release:prepare release:perform -DlocalCheckout=true -DpushChanges=false -DcompletionGoals="spotless:apply"'
 
-      fetch_all_commits:
-        description: 'Whether to fetch all commits. Default: false'
-        required: false
-        type: boolean
-        default: false
       quarkus_jib_image:
         description: 'Whether to perform a Quarkus JIB image build and push. Default: false'
         required: false
@@ -78,13 +73,13 @@ jobs:
 
     env:
       # Logic: Use the user input if provided, otherwise fall back to the repo's default branch
-      FINAL_REF: ${{ github.event.inputs.ref_to_release || github.event.repository.default_branch }}
+      FINAL_REF: ${{ inputs.ref_to_release || github.event.repository.default_branch }}
 
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: '${{ env.FINAL_REF }}'
-        fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+        fetch-depth: 0
         persist-credentials: false
         fetch-tags: true
 
@@ -145,12 +140,17 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Create the GH Release
       run: |
-        # Fetch latest two tags sorted by creation date
-        TAGS=$(git tag --sort=-creatordate --merged "$FINAL_REF" | head -n 2)
+        # Fetch latest two tags merged into the target ref sorted by creation date
+        TAGS=$(git tag --sort=-creatordate --merged "${FINAL_REF}" | head -n 2)
         LATEST_TAG=$(echo "$TAGS" | sed -n '1p')
         PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
-        echo "Creating release notes between ${LATEST_TAG} and ${PREVIOUS_TAG}"
-        gh release create --target "${FINAL_REF}" --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
+        if [ -n "${PREVIOUS_TAG}" ]; then
+          echo "Creating release notes between ${LATEST_TAG} and ${PREVIOUS_TAG}"
+          gh release create --target "${FINAL_REF}" --generate-notes --notes-start-tag "${PREVIOUS_TAG}" "${LATEST_TAG}"
+        else
+          echo "Creating release notes for ${LATEST_TAG}"
+          gh release create --target "${FINAL_REF}" --generate-notes "${LATEST_TAG}"
+        fi
       env:
         # Use the standard GITHUB_TOKEN or a Custom PAT if pushing to other repos
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -50,12 +50,6 @@ on:
               "MRRC" at "https://maven.repository.redhat.com/ga/"
           )
 
-      fetch_all_commits:
-        description: "Whether to fetch all commits. Default: false"
-        required: false
-        type: boolean
-        default: false
-
     secrets:
       SONATYPE_USERNAME:
         required: true
@@ -87,7 +81,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: "${{ env.FINAL_REF }}"
-          fetch-depth: ${{ inputs.fetch_all_commits == true && '0' || '1' }}
+          fetch-depth: 0
           persist-credentials: false
           fetch-tags: true
 
@@ -152,7 +146,8 @@ jobs:
 
       - name: Create the GH Release
         run: |
-          TAGS=$(git tag --sort=-creatordate | head -n 2)
+          # Fetch latest two tags merged into the target ref sorted by creation date
+          TAGS=$(git tag --sort=-creatordate --merged "${FINAL_REF}" | head -n 2)
           LATEST_TAG=$(echo "$TAGS" | sed -n '1p')
           PREVIOUS_TAG=$(echo "$TAGS" | sed -n '2p')
           if [ -n "${PREVIOUS_TAG}" ]; then
